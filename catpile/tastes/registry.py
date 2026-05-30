@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 from . import Taste
-from .v1 import IndentSyntax
+from .indent import IndentSyntax
 from .bracket import BracketSyntax
 
 

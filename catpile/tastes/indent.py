@@ -1,10 +1,10 @@
-"""Catpile v1 taste - the current indentation-based Pythonic syntax."""
+"""Catpile indent taste - the current indentation-based Pythonic syntax."""
 
 from __future__ import annotations
 
 from . import Taste
 from ..ir import Program
-from ..parser import parse as v1_parse, ParseError
+from ..parser import parse as indent_parse, ParseError
 
 
 class IndentSyntax(Taste):
@@ -16,13 +16,13 @@ class IndentSyntax(Taste):
 
     def compile(self, source: str) -> Program:
         default_scope = self._config.get("default_scope", "local")
-        return v1_parse(source, default_scope=default_scope)
+        return indent_parse(source, default_scope=default_scope)
 
     def validate(self, source: str) -> list[dict]:
         """Quick syntax validation. Returns diagnostics."""
         try:
             default_scope = self._config.get("default_scope", "local")
-            v1_parse(source, default_scope=default_scope)
+            indent_parse(source, default_scope=default_scope)
             return []
         except (SyntaxError, ParseError) as e:
             line = getattr(e, 'line', 0) or 1

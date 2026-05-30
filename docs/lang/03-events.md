@@ -1,12 +1,6 @@
 # CatLang: Events
 
-Events are the entry points for code execution. They trigger when a specific thing happens - page load, button press, mouse hover, etc.
-
-<SyntaxBreakdown pattern="event-handler" />
-
-<SymbolCard name="loaded" />
-<SymbolCard name="pressed" />
-<SymbolCard name="key_press" />
+Events are where code execution begins. They fire when something happens — page loads, button clicks, mouse movement, key presses, messages, etc.
 
 ## Event Structure
 
@@ -16,118 +10,41 @@ on <event_name>[(<target>)]:
 ```
 
 - `on` keyword
-- Event name (check table below)
-- Optional target in parentheses (a UI element globalid or path)
+- Event name
+- Optional target in parentheses (a UI element, globalid, or page path)
 - Colon `:`
-- Indented body (one or more statements)
+- Indented body
 
 ## Event Table
 
-| Event Name | ID | Alias | Parameters | Description |
+| CatLang | ID | Schema Name | Parameters | Description |
 |---|---|---|---|---|
-| `loaded` | 0 | `LOADED` | - | When website/script loads |
-| `pressed` | 1 | `PRESSED` | `button` (object) | When a button is clicked |
-| `mouse_enter` | 2 | `MOUSE_ENTER` | `object` | Mouse enters element |
-| `mouse_leave` | 3 | `MOUSE_LEAVE` | `object` | Mouse leaves element |
-| `changed` | 4 | `CHANGED` | `object` | Element value changed |
-| `focused` | 5 | `FOCUSED` | `object` | Element gained focus |
-| `unfocused` | 6 | `UNFOCUSED` | `object` | Element lost focus |
-| `key_press` | 7 | `KEY_PRESS` | - | Key pressed |
-| `key_release` | 8 | `KEY_RELEASE` | - | Key released |
-| `value_changed` | 9 | `VALUE_CHANGED` | `object` | Slider value changed |
-| `input_began` | 10 | `INPUT_BEGAN` | `object` | Touch input began |
-| `input_ended` | 11 | `INPUT_ENDED` | `object` | Touch input ended |
-| `input_changed` | 12 | `INPUT_CHANGED` | `object` | Touch position changed |
-| `player_added` | 13 | `PLAYER_ADDED` | `name` | Player joined the server |
-
-## Events with Targets
-
-Events that act on a specific UI element use the target parameter:
-
-```python
-on pressed("@<"):                  # Button with globalid @<
-    log("Clicked!")
-
-on pressed(page.FileLoader.Load):   # Path-based reference
-    log("Clicked!")
-
-on changed("textInput"):
-    log("Input changed")
-```
-
-### Using Path References
-
-Instead of raw global IDs, you can use paths from the `.catui` file:
-
-```python
-on pressed(page.FileLoader.Load):
-    l_text = input_get_text(page.FileLoader.FileInput)
-```
-
-The compiler resolves these to global IDs at compile time.
-
-## `loaded` Event - Special Case
-
-`loaded` fires when the page loads. It takes no parameters:
-
-```python
-on loaded:
-    log("Page loaded")
-    init_ui()
-    load_data()
-```
-
-This is equivalent to CatWeb's "When website loaded..." block.
-
-## Multiple Events in One Script
-
-A script can have multiple events:
-
-```python
-on loaded:
-    DATA_LOADED = 0
-    init_settings()
-
-on pressed("startButton"):
-    run_game()
-```
-
-## Event Parameter: `(parent)`
-
-The special target `(parent)` refers to the parent element of the script:
-
-```python
-on pressed(page.Element.Button):
-    # (parent) is the element that owns this script
-    hide("(parent)")
-```
-
-This is a CatWeb built-in that resolves to the script's container.
+| `on loaded:` | 0 | LOADED | — | Page or script loads |
+| `on pressed(target):` | 1 | PRESSED | `target` (object) | Element is clicked |
+| `on key_pressed(key):` | 2 | KEY_PRESSED | `key` (key code) | Key is pressed |
+| `on mouse_enter(target):` | 3 | MOUSE_ENTER | `target` (object) | Mouse enters element |
+| `on mouse_leave(target):` | 5 | MOUSE_LEAVE | `target` (object) | Mouse leaves element |
+| `on changed(target):` | 10 | CHANGED | `target` (object) | Element value changes |
+| `on mouse_down(target):` | 11 | MOUSE_DOWN | `target` (object) | Mouse pressed on element |
+| `on mouse_up(target):` | 12 | MOUSE_UP | `target` (object) | Mouse released on element |
+| `on right_click(target):` | 13 | RIGHT_CLICKED | `target` (object) | Element is right-clicked |
+| `on donation(target):` | 7 | DONATION | `target` (object) | Gamepass/product bought |
+| `on submit(target):` | 8 | INPUT_SUBMIT | `target` (object) | Input form submitted |
+| `on message:` | 9 | MSG_RECEIVED | — | Broadcast message received |
+| `on crosssite_message:` | 14 | CROSSSITE_MSG | — | Cross-site message received |
 
 ## Function Definitions
 
-Functions are reusable blocks of code with parameters:
+Functions are reusable blocks defined with `fn`:
 
 ```python
-fn function_name(param1, param2):
+fn <name>(<params>):
     <body>
 ```
 
-Example with parameters:
-
-```python
-fn CreateElement(position, color):
-    o_element = look_duplicate("T5")
-    look_set_prop("Position", o_element, position)
-    look_set_prop("Name", o_element, color)
-
-fn GetFirst(val):
-    o_x = l_val
-    o_x = o_x / 10
-    return o_x
-```
-
-Functions can return values with `return`:
+| CatLang | ID | Schema Name | Parameters | Description |
+|---|---|---|---|---|
+| `fn name(args):` | 6 | FUNC_DEF | `name` (string), `args` | Define a callable function |
 
 ```python
 fn add(a, b):
@@ -137,4 +54,60 @@ on loaded:
     result = func_run("add", 3, 5)
 ```
 
-Functions are called via the `func_run` action internally.
+## Events with Targets
+
+Events that act on a specific UI element take a target parameter:
+
+```python
+on pressed(page.FileLoader.Load):
+    log("Clicked!")
+
+on changed("textInput"):
+    log("Input changed")
+
+on key_pressed("Enter"):
+    log("Enter pressed")
+```
+
+Targets can be:
+- **Raw global IDs**: `on pressed("@<"):`
+- **Page paths**: `on pressed(page.FileLoader.Load):` (resolved via `.catui`)
+- **Strings**: `on changed("textInput"):`
+
+## `loaded` — Special Case
+
+`loaded` fires when the page/script loads and takes no parameters:
+
+```python
+on loaded:
+    log("Page ready")
+    init_game()
+```
+
+Equivalent to CatWeb's "When website loaded..." block.
+
+## Multiple Events
+
+A script can have any number of events:
+
+```python
+on loaded:
+    DATA_LOADED = 0
+
+on pressed("startButton"):
+    run_game()
+
+on message:
+    handle_signal()
+```
+
+## `(parent)` Target
+
+The special target `(parent)` refers to the element containing the script:
+
+```python
+on pressed(page.Element.Button):
+    hide("(parent)")
+```
+
+A CatWeb built-in that resolves to the script's container element.
