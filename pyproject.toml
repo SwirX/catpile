@@ -8,6 +8,7 @@ version = "1.0.0"
 description = "Catpile — Pythonic DSL → CatWeb JSON compiler"
 readme = "README.md"
 license = {text = "GNU General Public License v3.0"}
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
     {name = "SwirX"},
@@ -39,3 +40,6 @@ include = ["catpile*"]
 
 [tool.setuptools.package-data]
 catpile = ["schema.json"]
+
+[tool.setuptools]
+include-package-data = true

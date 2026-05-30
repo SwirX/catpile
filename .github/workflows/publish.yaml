@@ -1,0 +1,32 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published] # This triggers the script whenever you create a GitHub Release
+
+jobs:
+  build-n-publish:
+    name: Build and publish Python distro to PyPI
+    runs-on: ubuntu-latest
+
+    permissions:
+      # CRITICAL: This permission is required for Trusted Publishers OIDC authentication
+      id-token: write
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install build dependencies
+      run: python3 -m pip install --upgrade build
+
+    - name: Build dist
+      run: python3 -m build
+
+    - name: Publish package to PyPI
+      uses: pypa/github-action-pypa-release-action@release/v1
