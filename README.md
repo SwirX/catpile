@@ -5,6 +5,8 @@
 
 A Pythonic DSL → **CatWeb JSON** compiler. Write Roblox CatWeb scripts in a clean, readable language - compile to the JSON format CatWeb expects.
 
+> Documentation: [catpile-docs.vercel.app](https://catpile-docs.vercel.app)
+
 ```
 .cat source → [Parser] → IR (AST) → [Emitter] → CatWeb JSON
 ```
@@ -27,7 +29,9 @@ python3 -m catpile.web
 
 ## Documentation
 
-Full documentation is in the [`docs/`](docs/) directory:
+Online: [catpile-docs.vercel.app](https://catpile-docs.vercel.app)
+
+Full source is also in the [`docs/`](docs/) directory:
 
 | Section | Covers |
 |---------|--------|
