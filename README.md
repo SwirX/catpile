@@ -53,25 +53,26 @@ on pressed("myButton"):
     count = 0
     repeat(10):
         inc(count, 1)
-    if eq(count, 10):
-        log("Done!")
+    if gte(count, 10):
+        log("Max reached!")
+        hide("myButton")
 
 # Multi-script project
-script "movement":
+script "display":
     on loaded:
-        initBoard()
+        render_list()
 
-script "utils":
-    fn initBoard():
-        createTable("pieces")
-        setentry("king", "pieces", "e1")
+script "data":
+    fn render_list():
+        foreach(items):
+            log("{l_index}: {l_value}")
 ```
 
 ## Key Features
 
 - **Indentation-based syntax** (Python-like) and **bracket syntax** (JS-like) via the taste system
 - **Schema-based compilation** - every action knows its slot types (variable, object, any), so braces `{}` are handled automatically
-- **Dict literals** - `pieces = {"king": "e1", "queen": "d1"}` compiles to CREATE_TABLE + SET_ENTRY chains
+- **Dict literals** - `config = {"theme": "dark", "volume": 0.8}` compiles to CREATE_TABLE + SET_ENTRY chains
 - **String interpolation** - `"Hello {name}!"` auto-generates STR_CONCAT
 - **Math expressions** - constant folding at compile time, VAR_* chains at runtime for variables
 - **Multi-return actions** - `x, y = getCursor()`
@@ -104,11 +105,13 @@ catpile/
 │       ├── v1.py            # "indent" taste
 │       ├── bracket.py       # "bracket" taste
 │       └── registry.py      # Taste discovery
-├── vscode-catpile/          # VSCode extension (syntax highlighting)
 ├── examples/
 ├── tests/
 ├── docs/                    # Full documentation
+├── pyproject.toml           # Build config
+├── LICENSE
 ├── CHANGELOG.md
+├── .gitignore
 └── README.md
 ```
 
