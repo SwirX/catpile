@@ -85,24 +85,42 @@ hide(page.LoadingScreen)
 look_set_prop("Background Color", o_header, "ebecd0")
 ```
 
+## Exporting from CatWeb
+
+Before decompiling, export your site from the CatWeb editor:
+
+1. **Select the page element**: click the page root in the CatWeb editor hierarchy
+
+   ![Select page element](../../assets/screenshots/01-select-page-element.png)
+
+2. **Press Export**: click the export button to generate the page JSON
+
+   ![Press Export](../../assets/screenshots/02-press-export.png)
+
+3. **Copy the JSON**: the full page JSON is now on your clipboard, ready to save as `page.json`
+
+   ![Copy JSON](../../assets/screenshots/03-copy-json.png)
+
+Save the copied JSON to a file (e.g. `page.json`) and proceed with the CLI or editor import below.
+
 ## Using the Decompiler
 
 ### CLI
 
 ```bash
 # Decompile a CatWeb page JSON
-python3 -c "
-from catpile.decompiler import decompile_page
-import json
+cpile decompile page.json -o output-dir/
+```
 
-with open('page.json') as f:
-    data = json.load(f)
+This produces:
+- `page.cat` — one `.cat` file per script (aliased or indexed)
+- `page.catui` — UI hierarchy and path mappings
+- `page.json` — original UI structure with scripts stripped
 
-files = decompile_page(data)
-for name, content in files.items():
-    with open(name, 'w') as f:
-        f.write(content)
-"
+Or use the standalone entry point:
+
+```bash
+cpile-decompile page.json -o output-dir/
 ```
 
 ### Web API

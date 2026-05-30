@@ -20,8 +20,8 @@ pip install catpile
 # Compile a script
 cpile script.cat -o output.json
 
-# Or as module
-python3 -m catpile.cli script.cat
+# Decompile a CatWeb page
+cpile decompile page.json -o output-dir/
 
 # Web service (localhost:8788)
 python3 -m catpile.web
@@ -95,6 +95,7 @@ catpile/
 │   ├── parser.py            # Indent taste tokenizer + parser
 │   ├── decompiler.py        # CatWeb JSON → .cat source + .catui
 │   ├── cli.py               # CLI entry point
+│   ├── decompile_cli.py     # Decompile CLI entry point
 │   ├── web.py               # WSGI web API
 │   ├── lsp.py               # LSP server (stdio)
 │   ├── ui.py                # UI element linker

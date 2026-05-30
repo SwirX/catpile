@@ -20,7 +20,7 @@ on loaded:
 ## Step 2: Compile
 
 ```bash
-python3 -m catpile.cli hello.cat -o hello.json
+cpile compile hello.cat -o hello.json
 ```
 
 Output (`hello.json`):

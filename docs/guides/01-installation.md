@@ -25,7 +25,6 @@ pip install -e .
 
 ```bash
 cpile --help
-python3 -m catpile.cli --help
 ```
 
 ## Optional Dependencies
@@ -48,7 +47,7 @@ python3 tests/test_all.py
 python3 tests/test_optimizer.py
 
 # Compile examples
-python3 -m catpile.cli examples/basic.cat
+cpile compile examples/basic.cat
 
 # Start web server
 python3 -m catpile.web
