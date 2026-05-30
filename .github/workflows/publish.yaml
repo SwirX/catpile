@@ -29,4 +29,4 @@ jobs:
       run: python3 -m build
 
     - name: Publish package to PyPI
-      uses: pypa/github-action-pypa-release-action@release/v1
+      uses: pypa/gh-action-pypi-publish@release/v1
