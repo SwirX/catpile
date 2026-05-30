@@ -7,7 +7,7 @@ name = "catpile"
 version = "1.0.0"
 description = "Catpile — Pythonic DSL → CatWeb JSON compiler"
 readme = "README.md"
-license = {text = "GNU General Public License v3.0"}
+license = "GNU General Public License v3.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
