@@ -1,0 +1,25 @@
+# Catpile dict literal example — indent taste
+# Instead of:
+#   createTable("config")
+#   setentry("volume", 0.8, "config")
+#   setentry("theme", "dark", "config")
+#   ...
+# Just write a dict and it auto-compiles to table actions
+
+on loaded:
+    config = {
+        "site_name": "My App",
+        "version": "1.0",
+        "theme": "dark",
+        "language": "en",
+        "notifications": "on",
+    }
+    log("Config loaded: {config}")
+
+# Also works in bracket taste:
+# on loaded {
+#     config = {
+#         "key": "value",
+#     };
+#     log("Config: {config}");
+# }

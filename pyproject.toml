@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catpile"
+version = "1.0.0"
+description = "Catpile — Pythonic DSL → CatWeb JSON compiler"
+readme = "README.md"
+license = {text = "GNU General Public License v3.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "SwirX"},
+]
+keywords = ["catweb", "roblox", "compiler", "dsl", "catlua"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Preprocessors",
+]
+
+[project.urls]
+Source = "https://github.com/swirx/catpile"
+Documentation = "https://github.com/swirx/catpile/tree/main/docs"
+
+[project.scripts]
+cpile = "catpile.cli:main"
+cpile-decompile = "catpile.decompile_cli:main"
+
+[tool.setuptools.packages.find]
+include = ["catpile*"]
+
+[tool.setuptools.package-data]
+catpile = ["schema.json"]

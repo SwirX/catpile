@@ -1,0 +1,138 @@
+# Guides: Decompiling
+
+Reverse-engineer CatWeb JSON back to CatLang source code.
+
+## Overview
+
+The decompiler converts CatWeb JSON → `.cat` source (for editing) + `.catui` (for UI paths).
+
+```
+CatWeb JSON → [Extract Scripts] → [Decompile Actions] → .cat file per script
+           → [Extract UI] → [Build Paths] → .catui
+           → [Strip Scripts] → .json (preserved UI)
+```
+
+## Decompile Process
+
+### 1. Action Decompilation
+
+CatWeb's flat `END`-terminated action array is converted to indented blocks:
+
+```
+LOG "hello"         →  log("hello")
+IF_EQ a, b          →  if eq(a, b):
+    LOG "equal"     →      log("equal")
+ELSE                →  else:
+    LOG "not equal" →      log("not equal")
+END                 →  
+```
+
+The decompiler uses a **stack** to track open blocks (IF, REPEAT, FOREACH) and their bodies.
+
+### 2. Output Variable Detection
+
+Using the CatWeb schema, the decompiler knows which action slots are outputs:
+
+```python
+# TABLE_SET (id 55): no output → plain call
+table_set("fg", "colors", "eaeaea")
+
+# TABLE_GET (id 56): output at index 2 → assignment
+o_bgColor = table_get("bg", "app_config")
+
+# GET_VIEWPORT (id 84): outputs at indices 0 and 1
+WIDTH, HEIGHT = input_get_viewport()
+```
+
+Optional outputs with `""` value are skipped:
+```python
+func_run("function", arg)  # No assignment for empty optional output
+```
+
+### 3. Dict Literal Detection
+
+The decompiler detects TABLE_CREATE + consecutive TABLE_SET patterns:
+
+```python
+# Detected pattern:
+# TABLE_CREATE "default"
+# TABLE_SET "l", "default", "ebecd0"
+# TABLE_SET "d", "default", 779556
+# TABLE_SET "colors", "app_config", colors
+
+# Output:
+colors = {"bg": "1a1a2e", "fg": "eaeaea"}
+table_set("colors", "app_config", colors)
+```
+
+### 4. Scope Variable Handling
+
+`l!var` → `l_var`, `o!header` → `o_header`, `g!score` → `g_score`
+
+Variables with dashes in names (`icy-tea`) use underscore: `icy_tea`
+
+### 5. Path-Based References
+
+When a `.catui` paths map is available, global IDs are resolved to page paths:
+
+```python
+# Without .catui:
+hide("G\"")
+look_set_prop("Background Color", "o!header", "ebecd0")
+
+# With .catui:
+hide(page.LoadingScreen)
+look_set_prop("Background Color", o_header, "ebecd0")
+```
+
+## Using the Decompiler
+
+### CLI
+
+```bash
+# Decompile a CatWeb page JSON
+python3 -c "
+from catpile.decompiler import decompile_page
+import json
+
+with open('page.json') as f:
+    data = json.load(f)
+
+files = decompile_page(data)
+for name, content in files.items():
+    with open(name, 'w') as f:
+        f.write(content)
+"
+```
+
+### Web API
+
+```bash
+curl -X POST https://cpile.bouyakhsass.com/api/decompile \
+  -H "Content-Type: application/json" \
+  -d @page.json
+```
+
+Returns: `{"script.cat": "...", "page.catui": "...", "page.json": "..."}`
+
+### Editor Import
+
+1. Open [cpile.bouyakhsass.com](https://cpile.bouyakhsass.com)
+2. Click **Import**
+3. Paste CatWeb JSON
+4. Scripts appear in Explorer, decompiled and editable
+
+## What Gets Decompiled
+
+| CatWeb Feature | Decompiled As |
+|---|---|
+| `id: 0` → "When website loaded..." | `on loaded:` |
+| `id: 1` → "When button pressed..." | `on pressed(target):` |
+| `id: 11` → "Set variable to value" | `var = value` |
+| `id: 87` → "Run function" | `func_run("name", args)` |
+| `id: 54` → "Create table" | `create_table("name")` |
+| `id: 18` → "If equal" | `if eq(a, b):` |
+| `id: 23` → "Repeat forever" | `repeat_forever:` |
+| `id: 113` → "Iterate through" | `foreach("table"):` |
+| `id: 115` → "Return" | `return value` |
+| `mappings.py` → action aliases | `log`, `show`, `hide`, etc. |

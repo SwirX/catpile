@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catpile Editor</title>
+<style>
+:root {
+  --bg: #18181c;
+  --surface: #212127;
+  --surface2: #2a2a32;
+  --surface3: #32323c;
+  --border: #3a3a46;
+  --text: #e8e8f0;
+  --text-dim: #9090a8;
+  --text-muted: #5a5a6e;
+  --accent: #6c6cf0;
+  --accent-dim: #4a4ab0;
+  --accent-glow: rgba(108,108,240,0.15);
+  --green: #4ec994;
+  --red: #f07070;
+  --yellow: #f0c060;
+  --radius: 7px;
+  --font: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --ui-font: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui-font);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* ─── Layout ─── */
+#app {
+  display: grid;
+  grid-template-rows: 38px 1fr 24px;
+  grid-template-columns: 200px 1fr 360px;
+  grid-template-areas:
+    "toolbar toolbar toolbar"
+    "tree editor output"
+    "status status status";
+  height: 100vh;
+  gap: 0;
+}
+
+/* ─── Toolbar ─── */
+#toolbar {
+  grid-area: toolbar;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  user-select: none;
+}
+
+.toolbar-brand {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  margin-right: 8px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.toolbar-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface2); color: var(--text); border-color: var(--surface3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-dim); }
+.btn.danger { background: transparent; border-color: var(--border); color: var(--red); }
+.btn.danger:hover { background: rgba(240,112,112,0.1); }
+.btn.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+.btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+.toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+
+/* ─── File Tree ─── */
+#tree-panel {
+  grid-area: tree;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 8px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+#tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+#tree::-webkit-scrollbar { width: 4px; }
+#tree::-webkit-scrollbar-track { background: transparent; }
+#tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin: 1px 4px;
+  transition: background 0.1s;
+  user-select: none;
+  min-height: 24px;
+}
+.tree-node:hover { background: var(--surface2); }
+.tree-node.active { background: var(--accent-glow); color: var(--accent); }
+.tree-node.active .node-name { color: var(--accent); }
+
+.tree-node .chevron {
+  width: 12px; height: 12px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+.tree-node.open .chevron { transform: rotate(90deg); }
+.tree-node .node-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.tree-node .node-name {
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.tree-node .node-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surface3);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.tree-children { display: none; }
+.tree-children.open { display: block; }
+
+.tree-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.tree-add-btn:hover { color: var(--accent); }
+
+/* ─── Editor ─── */
+#editor-panel {
+  grid-area: editor;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#editor-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  height: 34px;
+}
+#editor-tabs::-webkit-scrollbar { height: 3px; }
+#editor-tabs::-webkit-scrollbar-thumb { background: var(--border); }
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 34px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.editor-tab:hover { background: var(--surface2); }
+.editor-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+}
+.editor-tab .close-tab {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.1s;
+}
+.editor-tab .close-tab:hover { background: var(--surface3); color: var(--text); }
+
+#monaco-container { flex: 1; position: relative; }
+#editor-placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+#editor-placeholder .ph-icon { font-size: 32px; opacity: 0.3; }
+#editor-placeholder p { opacity: 0.5; }
+
+/* ─── Output / JSON Panel ─── */
+#output-panel {
+  grid-area: output;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.output-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.output-tab {
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.output-tab:hover { color: var(--text-dim); }
+.output-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.output-pane { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.output-pane.active { display: flex; }
+
+#json-output-container {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+  font-family: var(--font);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+#json-output-container::-webkit-scrollbar { width: 4px; }
+#json-output-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+#json-output {
+  white-space: pre;
+  color: var(--text-dim);
+}
+
+.json-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Config Pane */
+#config-pane {
+  padding: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+#config-pane::-webkit-scrollbar { width: 4px; }
+#config-pane::-webkit-scrollbar-thumb { background: var(--border); }
+
+.config-group { margin-bottom: 18px; }
+.config-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+.config-control {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  padding: 6px 10px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.config-control:focus { border-color: var(--accent); }
+select.config-control { cursor: pointer; }
+
+.range-row { display: flex; align-items: center; gap: 8px; }
+input[type=range].config-control {
+  padding: 0;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.range-val {
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--accent);
+  min-width: 16px;
+  text-align: center;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.toggle-label { font-size: 12px; color: var(--text-dim); }
+.toggle {
+  position: relative;
+  width: 32px; height: 18px;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--surface3);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  left: 3px; top: 3px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(14px);
+  background: white;
+}
+
+.config-save-row { margin-top: 10px; }
+
+/* Transpile pane */
+#transpile-pane {
+  padding: 14px;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.transpile-info {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+/* Status bar */
+#status {
+  grid-area: status;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  user-select: none;
+}
+#status .status-item { display: flex; align-items: center; gap: 4px; }
+#status .status-sep { opacity: 0.3; }
+#status-msg { margin-left: auto; opacity: 0.7; }
+
+/* Modals */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 24px;
+  width: 460px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal h2 { font-size: 15px; margin-bottom: 14px; color: var(--text); }
+.modal textarea {
+  width: 100%;
+  min-height: 180px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11.5px;
+  padding: 10px;
+  resize: vertical;
+  outline: none;
+}
+.modal textarea:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+/* Context menu */
+.ctx-menu {
+  position: fixed;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  z-index: 2000;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: none;
+}
+.ctx-menu.open { display: block; }
+.ctx-item {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ctx-item:hover { background: var(--surface3); color: var(--text); }
+.ctx-item.danger:hover { background: rgba(240,112,112,0.1); color: var(--red); }
+.ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+/* JSON syntax coloring */
+.json-key { color: #7ab0f0; }
+.json-str { color: #98d982; }
+.json-num { color: #f0c060; }
+.json-bool { color: var(--accent); }
+.json-null { color: var(--text-muted); }
+
+/* Notifications */
+.notif {
+  position: fixed;
+  bottom: 36px;
+  right: 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 3000;
+  animation: notifIn 0.2s ease;
+  max-width: 320px;
+}
+.notif.success { border-color: var(--green); color: var(--green); }
+.notif.error { border-color: var(--red); color: var(--red); }
+@keyframes notifIn {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Scrollbar global */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Loading */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+  z-index: 9999;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.loading-dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-dot"></div>
+  <span>Loading Catpile Editor…</span>
+</div>
+
+<!-- ─── App Shell ─── -->
+<div id="app" style="display:none">
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <span class="toolbar-brand">⬡ catpile</span>
+    <button class="btn" id="btn-new-file" title="New script">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M9 1H3a1 1 0 00-1 1v12a1 1 0 001 1h10a1 1 0 001-1V6l-5-5zm3 13H4V3h4v4h4v7zm-6-4h4v1H6v-1zm0-2h4v1H6V8z"/></svg>
+      New
+    </button>
+    <button class="btn" id="btn-import" title="Import CatWeb page JSON">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 12l-4-4h2.5V4h3v4H12L8 12zM2 13h12v1H2v-1z"/></svg>
+      Import
+    </button>
+    <button class="btn" id="btn-export" title="Export compiled page JSON">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4l4 4h-2.5v4h-3V8H4L8 4zM2 13h12v1H2v-1z"/></svg>
+      Export
+    </button>
+    <div class="toolbar-sep"></div>
+    <button class="btn primary" id="btn-compile">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l8 6-8 6V2z"/></svg>
+      Compile
+    </button>
+    <button class="btn" id="btn-compile-all" title="Compile full project">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v1H3v10h10V9h1v5a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1zm6 0h5v5h-1V4.4l-6.3 6.3-.7-.7L12.6 4H8V2z"/></svg>
+      Full Project
+    </button>
+    <div class="toolbar-sep"></div>
+    <button class="btn" id="btn-transpile" title="Convert between indent/bracket">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 4h6v1H1V4zm0 3h6v1H1V7zm0 3h4v1H1v-1zm8-6l4 4-4 4V8.5H7v-1h2V1zm0 2.5v1.5H7v1h2v1.5l2-2-2-2z"/></svg>
+      Transpile
+    </button>
+    <div class="toolbar-right">
+      <button class="btn" id="btn-settings">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 5a3 3 0 100 6A3 3 0 008 5zm0 5a2 2 0 110-4 2 2 0 010 4zm5.1-3.4l-.8-.5.1-.9a1 1 0 00-.6-1.1l-.9-.3-.4-.8a1 1 0 00-1-.6l-.9.1-.8-.5a1 1 0 00-1.2 0l-.8.5-.9-.1a1 1 0 00-1 .6l-.4.8-.9.3a1 1 0 00-.6 1.1l.1.9-.8.5a1 1 0 000 1.2l.8.5-.1.9a1 1 0 00.6 1.1l.9.3.4.8a1 1 0 001 .6l.9-.1.8.5a1 1 0 001.2 0l.8-.5.9.1a1 1 0 001-.6l.4-.8.9-.3a1 1 0 00.6-1.1l-.1-.9.8-.5a1 1 0 000-1.2zM8 11.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
+        Config
+      </button>
+    </div>
+  </div>
+
+  <!-- File Tree -->
+  <div id="tree-panel">
+    <div class="panel-header">
+      Explorer
+      <button class="btn" style="padding:2px 6px;font-size:10px" id="btn-add-script">+ Script</button>
+    </div>
+    <div id="tree"></div>
+  </div>
+
+  <!-- Editor -->
+  <div id="editor-panel">
+    <div id="editor-tabs"></div>
+    <div id="monaco-container">
+      <div id="editor-placeholder">
+        <div class="ph-icon">⬡</div>
+        <p>Open a script to start editing</p>
+        <p style="font-size:11px">or <a href="#" id="ph-import" style="color:var(--accent)">Import a CatWeb page</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Output Panel -->
+  <div id="output-panel">
+    <div class="output-tabs">
+      <div class="output-tab active" data-pane="json">JSON Preview</div>
+      <div class="output-tab" data-pane="config">Config</div>
+      <div class="output-tab" data-pane="transpile">Transpile</div>
+    </div>
+
+    <!-- JSON Pane -->
+    <div class="output-pane active" id="pane-json">
+      <div id="json-output-container">
+        <pre id="json-output"><span style="color:var(--text-muted)">// Compiled output will appear here.
+// Press Compile or Ctrl+B.</span></pre>
+      </div>
+      <div class="json-actions">
+        <button class="btn" id="btn-copy-json">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h7a1 1 0 011 1v1h1a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1v-1H3a1 1 0 01-1-1V3a1 1 0 011-1zm1 11h7V5h-1v7a1 1 0 01-1 1H4v1zm-2-2h7V3H3v8z"/></svg>
+          Copy
+        </button>
+        <button class="btn" id="btn-download-json">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 12l-4-4h2.5V4h3v4H12L8 12zM2 13h12v1H2v-1z"/></svg>
+          Download
+        </button>
+        <span id="compile-endpoint-hint" style="font-size:10px;color:var(--text-muted);margin-left:auto;align-self:center"></span>
+      </div>
+    </div>
+
+    <!-- Config Pane -->
+    <div class="output-pane" id="pane-config">
+      <div id="config-pane">
+        <div class="config-group">
+          <div class="config-label">Syntax Taste</div>
+          <select class="config-control" id="cfg-taste">
+            <option value="indent">indent — Python-like</option>
+            <option value="bracket">bracket — JS-like</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <div class="config-label">Default Scope</div>
+          <select class="config-control" id="cfg-scope">
+            <option value="local">local</option>
+            <option value="global">global</option>
+            <option value="obj">obj</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <div class="config-label">Optimization Level</div>
+          <div class="range-row">
+            <input type="range" class="config-control" id="cfg-opt" min="0" max="3" value="0">
+            <span class="range-val" id="cfg-opt-val">0</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">
+            O0=Debug · O1=Safe · O2=Production · O3=Aggressive
+          </div>
+        </div>
+        <div class="config-group">
+          <div class="config-label">Output Options</div>
+          <div class="toggle-row">
+            <span class="toggle-label">Clean debug labels</span>
+            <label class="toggle">
+              <input type="checkbox" id="cfg-clean" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row" style="margin-top:8px">
+            <span class="toggle-label">Minify output</span>
+            <label class="toggle">
+              <input type="checkbox" id="cfg-minify">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="config-group">
+          <div class="config-label">Backend URL</div>
+          <input type="text" class="config-control" id="cfg-url" value="http://localhost:8788" placeholder="http://localhost:8788">
+        </div>
+        <div class="config-save-row">
+          <button class="btn primary" id="btn-save-config" style="width:100%">Save Config</button>
+        </div>
+        <div style="margin-top:10px;background:var(--surface2);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--text-muted);line-height:1.6">
+          Start the Catpile web API:<br>
+          <code style="color:var(--accent);font-family:var(--font)">python3 -m catpile.web</code><br>
+          Listens on port 8788 by default.
+        </div>
+      </div>
+    </div>
+
+    <!-- Transpile Pane -->
+    <div class="output-pane" id="pane-transpile">
+      <div id="transpile-pane">
+        <div class="transpile-info">
+          Convert the current script between <strong>indent</strong> (Python-like) and <strong>bracket</strong> (JS-like) syntax.
+          The conversion preserves all logic, comments, and string values.
+        </div>
+        <div class="config-group">
+          <div class="config-label">Convert To</div>
+          <select class="config-control" id="trans-target">
+            <option value="bracket">bracket  (indent → { })</option>
+            <option value="indent">indent  (bracket → Python-like)</option>
+          </select>
+        </div>
+        <button class="btn primary" id="btn-do-transpile" style="width:100%;margin-top:8px">
+          Convert Current Script
+        </button>
+        <div id="transpile-preview" style="margin-top:12px;background:var(--surface2);border-radius:var(--radius);padding:10px;font-family:var(--font);font-size:11px;color:var(--text-dim);white-space:pre;overflow:auto;max-height:300px;display:none"></div>
+        <button class="btn" id="btn-apply-transpile" style="width:100%;margin-top:8px;display:none">
+          Apply to Editor
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div id="status">
+    <div class="status-item">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="4"/></svg>
+      <span id="status-taste">indent</span>
+    </div>
+    <span class="status-sep">│</span>
+    <div class="status-item" id="status-file">No file open</div>
+    <div id="status-msg"></div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <h2>Import CatWeb Page JSON</h2>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
+      Paste your CatWeb page JSON below or upload a file. The decompiler will extract scripts and the UI hierarchy.
+    </p>
+    <textarea id="import-json-text" placeholder='{"class":"Frame","globalid":"root",...}'></textarea>
+    <div style="margin-top:8px">
+      <input type="file" id="import-file-input" accept=".json" style="display:none">
+      <button class="btn" id="btn-import-file">Browse file…</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="btn-import-cancel">Cancel</button>
+      <button class="btn primary" id="btn-import-ok">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Script Modal -->
+<div class="modal-overlay" id="modal-new-script">
+  <div class="modal">
+    <h2>New Script</h2>
+    <div class="config-group">
+      <div class="config-label">Script Name / Alias</div>
+      <input type="text" class="config-control" id="new-script-name" placeholder="Script">
+    </div>
+    <div class="config-group">
+      <div class="config-label">Template</div>
+      <select class="config-control" id="new-script-tmpl">
+        <option value="blank">Blank</option>
+        <option value="loaded">on loaded handler</option>
+        <option value="button">Button script</option>
+        <option value="counter">Click counter</option>
+        <option value="keyboard">Keyboard controls</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="btn-new-cancel">Cancel</button>
+      <button class="btn primary" id="btn-new-ok">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" id="ctx-open">Open</div>
+  <div class="ctx-item" id="ctx-rename">Rename</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" id="ctx-duplicate">Duplicate</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" id="ctx-delete">Delete</div>
+</div>
+
+<script>
+require = { paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+
+const ACTIONS = [
+  {n:'log',id:0,cat:'Console',sig:'log(value)',desc:'Print a value'},
+  {n:'warn',id:1,cat:'Console',sig:'warn(value)',desc:'Print a warning'},
+  {n:'error',id:2,cat:'Console',sig:'error(value)',desc:'Print an error'},
+  {n:'wait',id:3,cat:'Loop',sig:'wait(seconds)',desc:'Wait N seconds'},
+  {n:'redirect',id:4,cat:'Navigation',sig:'redirect(url)',desc:'Go to URL'},
+  {n:'play',id:5,cat:'Audio',sig:'play(rbxassetid) -> var',desc:'Play audio'},
+  {n:'playlooped',id:26,cat:'Audio',sig:'playlooped(rbxassetid) -> var',desc:'Play looped audio'},
+  {n:'stop',id:74,cat:'Audio',sig:'stop(audio)',desc:'Stop audio'},
+  {n:'pause',id:75,cat:'Audio',sig:'pause(audio)',desc:'Pause audio'},
+  {n:'resume',id:76,cat:'Audio',sig:'resume(audio)',desc:'Resume audio'},
+  {n:'stopAllAudio',id:7,cat:'Audio',sig:'stopAllAudio()',desc:'Stop all audio'},
+  {n:'setvolume',id:73,cat:'Audio',sig:'setvolume(audio, vol)',desc:'Set volume 0-1'},
+  {n:'setspeed',id:77,cat:'Audio',sig:'setspeed(audio, speed)',desc:'Set playback speed'},
+  {n:'show',id:9,cat:'UI',sig:'show(element)',desc:'Make element visible'},
+  {n:'hide',id:8,cat:'UI',sig:'hide(element)',desc:'Make element invisible'},
+  {n:'settext',id:10,cat:'UI',sig:'settext(element, text)',desc:'Set element text'},
+  {n:'setimage',id:106,cat:'UI',sig:'setimage(element, rbxid)',desc:'Set image'},
+  {n:'setavatar',id:107,cat:'UI',sig:'setavatar(element, userId)',desc:'Set avatar'},
+  {n:'setprop',id:31,cat:'UI',sig:'setprop(prop, element, value)',desc:'Set element property'},
+  {n:'getprop',id:39,cat:'UI',sig:'getprop(prop, element) -> var',desc:'Get element property'},
+  {n:'getobjectsat',id:127,cat:'UI',sig:'getobjectsat(x, y) -> arr',desc:'Get objects at position'},
+  {n:'getassetinfo',id:129,cat:'UI',sig:'getassetinfo(info, id) -> var',desc:'Get asset info'},
+  {n:'duplicate',id:49,cat:'UI',sig:'duplicate(element) -> var',desc:'Clone element'},
+  {n:'delete',id:50,cat:'UI',sig:'delete(element)',desc:'Remove element'},
+  {n:'tween',id:88,cat:'UI',sig:'tween(prop, elem, val, time, style, dir)',desc:'Animate property'},
+  {n:'parent',id:58,cat:'Hierarchy',sig:'parent(child, parent)',desc:'Reparent element'},
+  {n:'getParent',id:97,cat:'Hierarchy',sig:'getParent(child) -> var',desc:'Get parent'},
+  {n:'findAncestor',id:98,cat:'Hierarchy',sig:'findAncestor(name, obj) -> var',desc:'Find ancestor'},
+  {n:'findChild',id:99,cat:'Hierarchy',sig:'findChild(name, obj) -> var',desc:'Find child'},
+  {n:'findDesc',id:100,cat:'Hierarchy',sig:'findDesc(name, obj) -> var',desc:'Find descendant'},
+  {n:'getChildren',id:101,cat:'Hierarchy',sig:'getChildren(obj) -> table',desc:'Get children'},
+  {n:'getDescendants',id:102,cat:'Hierarchy',sig:'getDescendants(obj) -> table',desc:'Get descendants'},
+  {n:'inc',id:12,cat:'Variables',sig:'inc(var, amount)',desc:'Increment variable'},
+  {n:'dec',id:13,cat:'Variables',sig:'dec(var, amount)',desc:'Decrement variable'},
+  {n:'mul',id:14,cat:'Variables',sig:'mul(var, factor)',desc:'Multiply variable'},
+  {n:'div',id:15,cat:'Variables',sig:'div(var, divisor)',desc:'Divide variable'},
+  {n:'pow',id:40,cat:'Variables',sig:'pow(var, exp)',desc:'Power'},
+  {n:'mod',id:41,cat:'Variables',sig:'mod(var, n)',desc:'Modulo'},
+  {n:'round',id:16,cat:'Math',sig:'round(x)',desc:'Round to nearest int'},
+  {n:'floor',id:17,cat:'Math',sig:'floor(x)',desc:'Floor'},
+  {n:'ceil',id:78,cat:'Math',sig:'ceil(x)',desc:'Ceil'},
+  {n:'random',id:27,cat:'Math',sig:'random(min, max)',desc:'Random number'},
+  {n:'deleteVar',id:96,cat:'Variables',sig:'deleteVar(name)',desc:'Delete variable'},
+  {n:'setProperty',id:94,cat:'Variables',sig:'setProperty(name, prop, value)',desc:'Set property of variable'},
+  {n:'getProperty',id:95,cat:'Variables',sig:'getProperty(name, prop) -> var',desc:'Get property of variable'},
+  {n:'gettext',id:30,cat:'Input',sig:'gettext(input) -> var',desc:'Get input text'},
+  {n:'getViewport',id:84,cat:'Input',sig:'getViewport() -> w, h',desc:'Get viewport size'},
+  {n:'getCursor',id:85,cat:'Input',sig:'getCursor() -> x, y',desc:'Get cursor position'},
+  {n:'getUsername',id:51,cat:'User',sig:'getUsername() -> var',desc:'Get local username'},
+  {n:'getDisplayName',id:53,cat:'User',sig:'getDisplayName() -> var',desc:'Get display name'},
+  {n:'getUserId',id:52,cat:'User',sig:'getUserId() -> var',desc:'Get user ID'},
+  {n:'broadcast',id:32,cat:'Network',sig:'broadcast(msg)',desc:'Send to page'},
+  {n:'broadcastSite',id:33,cat:'Network',sig:'broadcastSite(msg)',desc:'Send to site'},
+  {n:'broadcastCrossSite',id:130,cat:'Network',sig:'broadcastCrossSite(msg, url)',desc:'Cross-site broadcast'},
+  {n:'getUrl',id:117,cat:'Navigation',sig:'getUrl() -> var',desc:'Get current URL'},
+  {n:'getQueryParam',id:67,cat:'Navigation',sig:'getQueryParam(key) -> var',desc:'Get query parameter'},
+  {n:'concat',id:109,cat:'Strings',sig:'concat(a, b) -> var',desc:'Concatenate strings'},
+  {n:'strlen',id:48,cat:'Strings',sig:'strlen(s) -> var',desc:'String length'},
+  {n:'substring',id:42,cat:'Strings',sig:'substring(s, start, end) -> var',desc:'Extract substring'},
+  {n:'replace',id:43,cat:'Strings',sig:'replace(old, s, new) -> var',desc:'Replace in string'},
+  {n:'split',id:57,cat:'Strings',sig:'split(s, sep) -> table',desc:'Split to table'},
+  {n:'lower',id:69,cat:'Strings',sig:'lower(s) -> var',desc:'To lowercase'},
+  {n:'upper',id:70,cat:'Strings',sig:'upper(s) -> var',desc:'To uppercase'},
+  {n:'createTable',id:54,cat:'Tables',sig:'createTable(name)',desc:'Create table'},
+  {n:'setentry',id:55,cat:'Tables',sig:'setentry(key, table, val)',desc:'Set table entry'},
+  {n:'setentryobj',id:66,cat:'Tables',sig:'setentryobj(key, table, obj)',desc:'Set object entry'},
+  {n:'getentry',id:56,cat:'Tables',sig:'getentry(key, table) -> var',desc:'Get table entry'},
+  {n:'deleteentry',id:90,cat:'Tables',sig:'deleteentry(key, table)',desc:'Delete entry'},
+  {n:'tablelen',id:59,cat:'Tables',sig:'tablelen(table) -> var',desc:'Table length'},
+  {n:'insert',id:89,cat:'Tables',sig:'insert(val, pos, arr)',desc:'Insert into array'},
+  {n:'remove',id:91,cat:'Tables',sig:'remove(pos, arr)',desc:'Remove from array'},
+  {n:'join',id:110,cat:'Tables',sig:'join(arr, sep) -> var',desc:'Join array to string'},
+  {n:'foreach',id:113,cat:'Tables',sig:'foreach("table"):',desc:'Iterate table'},
+  {n:'timestamp',id:68,cat:'Time',sig:'timestamp() -> var',desc:'Unix timestamp'},
+  {n:'serverTimestamp',id:116,cat:'Time',sig:'serverTimestamp() -> var',desc:'Server timestamp'},
+  {n:'tick',id:83,cat:'Time',sig:'tick() -> var',desc:'Tick count'},
+  {n:'timezone',id:118,cat:'Time',sig:'timezone() -> var',desc:'Timezone'},
+  {n:'formatDate',id:71,cat:'Time',sig:'formatDate(fmt) -> var',desc:'Format current date'},
+  {n:'formatFromUnix',id:72,cat:'Time',sig:'formatFromUnix(ts, fmt) -> var',desc:'Format unix time'},
+  {n:'hexToRGB',id:119,cat:'Colors',sig:'hexToRGB(hex) -> var',desc:'Hex to RGB'},
+  {n:'hexToHSV',id:120,cat:'Colors',sig:'hexToHSV(hex) -> var',desc:'Hex to HSV'},
+  {n:'rgbToHex',id:121,cat:'Colors',sig:'rgbToHex(r,g,b) -> var',desc:'RGB to hex'},
+  {n:'hsvToHex',id:122,cat:'Colors',sig:'hsvToHex(h,s,v) -> var',desc:'HSV to hex'},
+  {n:'lerpColor',id:123,cat:'Colors',sig:'lerpColor(c1,c2,t) -> var',desc:'Color lerp'},
+  {n:'run',id:87,cat:'Functions',sig:'run("funcName", [args])',desc:'Call function'},
+  {n:'runbg',id:63,cat:'Functions',sig:'runbg("funcName", [args])',desc:'Background call'},
+  {n:'runProtected',id:128,cat:'Functions',sig:'runProtected("func", [args])',desc:'Protected call'},
+  {n:'runMath',id:114,cat:'Functions',sig:'runMath("abs", [x]) -> var',desc:'Run math function'},
+  {n:'setCookie',id:34,cat:'Cookies',sig:'setCookie(name, value)',desc:'Set cookie'},
+  {n:'getCookie',id:36,cat:'Cookies',sig:'getCookie(name) -> var',desc:'Get cookie'},
+  {n:'incCookie',id:35,cat:'Cookies',sig:'incCookie(name, amount)',desc:'Increment cookie'},
+  {n:'delCookie',id:62,cat:'Cookies',sig:'delCookie(name)',desc:'Delete cookie'},
+  {n:'repeat',id:22,cat:'Loop',sig:'repeat(n):',desc:'Repeat N times'},
+  {n:'repeat_forever',id:23,cat:'Loop',sig:'repeat_forever:',desc:'Infinite loop'},
+  {n:'break',id:24,cat:'Loop',sig:'break',desc:'Exit loop'},
+  {n:'return',id:115,cat:'Flow',sig:'return value',desc:'Return from function'},
+  {n:'if_lmb_down',id:79,cat:'Input',sig:'if_lmb_down():',desc:'Left mouse button down'},
+  {n:'if_mmb_down',id:80,cat:'Input',sig:'if_mmb_down():',desc:'Middle mouse button down'},
+  {n:'if_rmb_down',id:81,cat:'Input',sig:'if_rmb_down():',desc:'Right mouse button down'},
+  {n:'if_key_down',id:82,cat:'Input',sig:'if_key_down("key"):',desc:'Key is held'},
+];
+
+const EVENTS = [
+  {n:'loaded',id:0,sig:'on loaded:',desc:'When website loaded'},
+  {n:'pressed',id:1,sig:'on pressed("element"):',desc:'When element pressed'},
+  {n:'key_pressed',id:2,sig:'on key_pressed("key"):',desc:'When key pressed'},
+  {n:'mouse_enter',id:3,sig:'on mouse_enter("element"):',desc:'Mouse enters element'},
+  {n:'mouse_leave',id:5,sig:'on mouse_leave("element"):',desc:'Mouse leaves element'},
+  {n:'message_received',id:9,sig:'on message_received():',desc:'Broadcast received'},
+  {n:'changed',id:10,sig:'on changed("element"):',desc:'Input value changed'},
+  {n:'donation',id:7,sig:'on donation("item"):',desc:'Donation received'},
+  {n:'input_submit',id:8,sig:'on input_submit("form"):',desc:'Form submitted'},
+  {n:'mouse_down',id:11,sig:'on mouse_down("element"):',desc:'Mouse down on element'},
+  {n:'mouse_up',id:12,sig:'on mouse_up("element"):',desc:'Mouse up on element'},
+  {n:'right_clicked',id:13,sig:'on right_clicked("element"):',desc:'Right clicked'},
+  {n:'crosssite_msg',id:14,sig:'on crosssite_msg():',desc:'Cross-site message'},
+];
+
+const SNIPPETS_INDENT = {
+  'if': 'if eq(${1:a}, ${2:b}):\n    ${3:log("yes")}',
+  'ife': 'if eq(${1:a}, ${2:b}):\n    ${3:log("yes")}\nelse:\n    ${4:log("no")}',
+  'repeat': 'repeat(${1:10}):\n    ${2:log("loop")}',
+  'foreach': 'foreach("${1:table}"):\n    ${2:log("item")}',
+  'fn': 'fn ${1:myFunc}(${2:param}):\n    ${3:log("running")}',
+  'on': 'on ${1:loaded}:\n    ${2:log("hello")}',
+  'getCursor': 'getCursor(${1:x}, ${2:y})',
+  'getViewport': 'getViewport(${1:w}, ${2:h})',
+  'repeat_forever': 'repeat_forever:\n    ${1:log("loop")}\n    break',
+};
+
+const SNIPPETS_BRACKET = {
+  'if': 'if ${1:a} == ${2:b} { ${3:log("yes");} }',
+  'ife': 'if ${1:a} == ${2:b} {\n    ${3:log("yes");}\n} else {\n    ${4:log("no");}\n}',
+  'repeat': 'repeat(${1:10}) {\n    ${2:log("loop");}\n}',
+  'foreach': 'foreach(${1:items}) {\n    ${2:log("item");}\n}',
+  'fn': 'fn ${1:myFunc}(${2:param}) {\n    ${3:log("running");}\n}',
+  'on': 'on ${1:loaded} {\n    ${2:log("hello");}\n}',
+  'getCursor': 'getCursor(${1:x}, ${2:y});',
+  'getViewport': 'getViewport(${1:w}, ${2:h});',
+  'repeat_forever': 'repeat_forever {\n    ${1:log("loop");}\n    break;\n}',
+};
+
+const TEMPLATES = {
+  blank: '',
+  loaded: `on loaded:\n    log("Hello!")\n`,
+  button: `on loaded:\n    log("Script ready")\n\non pressed("myButton"):\n    log("Button clicked!")\n`,
+  counter: `on loaded:\n    count = 0\n    settext("label", "0")\n\non pressed("incrementBtn"):\n    inc(count, 1)\n    setprop("Text", "label", "{count}")\n`,
+  keyboard: `on loaded:\n    player_x = 400\n    player_y = 300\n\non key_pressed("w"):\n    dec(player_y, 10)\non key_pressed("s"):\n    inc(player_y, 10)\non key_pressed("a"):\n    dec(player_x, 10)\non key_pressed("d"):\n    inc(player_x, 10)\n`,
+};
+
+const TEMPLATES_BRACKET = {
+  blank: '',
+  loaded: `on loaded { log("Hello!"); }\n`,
+  button: `on loaded { log("Script ready"); }\n\non pressed("myButton") { log("Button clicked!"); }\n`,
+  counter: `on loaded {\n    count = 0;\n    settext("label", "0");\n}\n\non pressed("incrementBtn") {\n    inc(count, 1);\n    setprop("Text", "label", "{count}");\n}\n`,
+  keyboard: `on loaded {\n    player_x = 400;\n    player_y = 300;\n}\n\non key_pressed("w") { dec(player_y, 10); }\non key_pressed("s") { inc(player_y, 10); }\non key_pressed("a") { dec(player_x, 10); }\non key_pressed("d") { inc(player_x, 10); }\n`,
+};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+
+let monacoEditor = null;
+let activeNodeId = null;
+let openTabs = []; // [{id, name}]
+let ctxNodeId = null;
+let transpileResult = null;
+
+// VFS: { id: { id, name, type:'script'|'ui', cls, content, children:[], parentId } }
+let vfs = {};
+let vfsRoot = 'page';
+
+// Config
+let config = {
+  taste: 'indent',
+  scope: 'local',
+  opt: 0,
+  clean: true,
+  minify: false,
+  url: 'http://localhost:8788',
+};
+
+function loadConfig() {
+  try {
+    const s = localStorage.getItem('catpile_config');
+    if (s) config = { ...config, ...JSON.parse(s) };
+  } catch {}
+  applyConfigToUI();
+}
+
+function saveConfigFromUI() {
+  config.taste = document.getElementById('cfg-taste').value;
+  config.scope = document.getElementById('cfg-scope').value;
+  config.opt = parseInt(document.getElementById('cfg-opt').value);
+  config.clean = document.getElementById('cfg-clean').checked;
+  config.minify = document.getElementById('cfg-minify').checked;
+  config.url = document.getElementById('cfg-url').value;
+  localStorage.setItem('catpile_config', JSON.stringify(config));
+  setStatus('Config saved');
+  notify('Configuration saved', 'success');
+}
+
+function applyConfigToUI() {
+  document.getElementById('cfg-taste').value = config.taste;
+  document.getElementById('cfg-scope').value = config.scope;
+  document.getElementById('cfg-opt').value = config.opt;
+  document.getElementById('cfg-opt-val').textContent = config.opt;
+  document.getElementById('cfg-clean').checked = config.clean;
+  document.getElementById('cfg-minify').checked = config.minify;
+  document.getElementById('cfg-url').value = config.url;
+  document.getElementById('status-taste').textContent = config.taste;
+}
+
+// ═══════════════════════════════════════════
+// VFS HELPERS
+// ═══════════════════════════════════════════
+
+let _nodeCounter = 1;
+function newId() { return 'n' + (_nodeCounter++); }
+
+function initVFS() {
+  vfs = {};
+  const rootId = 'page';
+  vfs[rootId] = { id: rootId, name: 'Page', type: 'root', children: [], parentId: null };
+  vfsRoot = rootId;
+  localStorage.removeItem('catpile_vfs');
+}
+
+function saveVFS() {
+  // Save content of open scripts from editor
+  if (monacoEditor && activeNodeId && vfs[activeNodeId]) {
+    vfs[activeNodeId].content = monacoEditor.getValue();
+  }
+  localStorage.setItem('catpile_vfs', JSON.stringify({ vfs, vfsRoot, counter: _nodeCounter }));
+}
+
+function loadVFS() {
+  try {
+    const s = localStorage.getItem('catpile_vfs');
+    if (s) {
+      const d = JSON.parse(s);
+      vfs = d.vfs;
+      vfsRoot = d.vfsRoot;
+      _nodeCounter = d.counter || 100;
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+function addScript(name, content = '', parentId = null) {
+  const id = newId();
+  const pid = parentId || vfsRoot;
+  vfs[id] = { id, name, type: 'script', content, children: [], parentId: pid };
+  if (vfs[pid]) vfs[pid].children.push(id);
+  return id;
+}
+
+function addUINode(name, cls, globalid, parentId = null) {
+  const id = newId();
+  const pid = parentId || vfsRoot;
+  vfs[id] = { id, name, type: 'ui', cls, globalid, children: [], parentId: pid };
+  if (vfs[pid]) vfs[pid].children.push(id);
+  return id;
+}
+
+function deleteNode(id) {
+  const node = vfs[id];
+  if (!node || id === vfsRoot) return;
+  // Remove from parent
+  if (node.parentId && vfs[node.parentId]) {
+    vfs[node.parentId].children = vfs[node.parentId].children.filter(c => c !== id);
+  }
+  // Recursively delete children
+  [...(node.children || [])].forEach(deleteNode);
+  delete vfs[id];
+  if (activeNodeId === id) {
+    activeNodeId = null;
+    if (monacoEditor) monacoEditor.setValue('');
+  }
+  openTabs = openTabs.filter(t => t.id !== id);
+  renderTabs();
+}
+
+// ═══════════════════════════════════════════
+// TREE RENDERING
+// ═══════════════════════════════════════════
+
+const ICONS = {
+  root: `<svg viewBox="0 0 14 14" fill="currentColor" width="14" height="14"><rect x="1" y="2" width="12" height="10" rx="1.5" opacity=".3"/><rect x="3" y="4" width="8" height="6" rx="1" opacity=".7"/></svg>`,
+  script: `<svg viewBox="0 0 14 14" fill="currentColor" width="14" height="14"><path d="M2 1h7l3 3v9H2V1zm7 0v3h3M4 6h6M4 8h6M4 10h4" stroke="currentColor" stroke-width="1" fill="none"/></svg>`,
+  ui: `<svg viewBox="0 0 14 14" fill="currentColor" width="14" height="14"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3" width="4" height="3" rx="1" opacity=".7"/></svg>`,
+  chevron: `<svg class="chevron" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`,
+};
+
+function buildNodeColor(type) {
+  if (type === 'script') return 'var(--accent)';
+  if (type === 'ui') return 'var(--green)';
+  return 'var(--text-muted)';
+}
+
+function renderTree() {
+  const treeEl = document.getElementById('tree');
+  treeEl.innerHTML = '';
+  renderNode(vfsRoot, treeEl, 0);
+}
+
+function renderNode(id, container, depth) {
+  const node = vfs[id];
+  if (!node) return;
+
+  const hasChildren = node.children && node.children.length > 0;
+  const isOpen = node._open !== false; // default open
+
+  const wrapper = document.createElement('div');
+
+  const el = document.createElement('div');
+  el.className = 'tree-node' + (activeNodeId === id ? ' active' : '') + (isOpen ? ' open' : '');
+  el.dataset.id = id;
+  el.style.paddingLeft = (8 + depth * 14) + 'px';
+
+  // Chevron
+  const chevron = document.createElement('span');
+  chevron.style.cssText = `width:12px;height:12px;flex-shrink:0;color:var(--text-muted);transition:transform 0.15s;display:flex;align-items:center`;
+  chevron.innerHTML = hasChildren ? ICONS.chevron : '';
+  el.appendChild(chevron);
+
+  // Icon
+  const icon = document.createElement('span');
+  icon.style.color = buildNodeColor(node.type);
+  icon.innerHTML = ICONS[node.type] || ICONS.script;
+  el.appendChild(icon);
+
+  // Name
+  const name = document.createElement('span');
+  name.className = 'node-name';
+  name.textContent = node.name + (node.type === 'ui' ? '' : '');
+  el.appendChild(name);
+
+  // Badge
+  if (node.type === 'ui' && node.cls) {
+    const badge = document.createElement('span');
+    badge.className = 'node-badge';
+    badge.textContent = node.cls;
+    el.appendChild(badge);
+  }
+  if (node.type === 'script') {
+    const badge = document.createElement('span');
+    badge.className = 'node-badge';
+    badge.textContent = '.cat';
+    badge.style.color = 'var(--accent)';
+    el.appendChild(badge);
+  }
+
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (hasChildren && e.target.closest('.chevron') || (hasChildren && e.offsetX < 20)) {
+      node._open = !isOpen;
+      renderTree();
+      return;
+    }
+    if (hasChildren && el.querySelector('.chevron') && e.clientX - el.getBoundingClientRect().left < 28) {
+      node._open = !isOpen;
+      renderTree();
+      return;
+    }
+    if (node.type === 'script') {
+      openScript(id);
+    } else if (node.type === 'root' || node.type === 'ui') {
+      node._open = !isOpen;
+      renderTree();
+    }
+  });
+
+  el.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showCtxMenu(id, e.clientX, e.clientY);
+  });
+
+  container.appendChild(el);
+  wrapper.appendChild(el);
+
+  if (hasChildren) {
+    const childrenEl = document.createElement('div');
+    childrenEl.className = 'tree-children' + (isOpen ? ' open' : '');
+    node.children.forEach(cid => renderNode(cid, childrenEl, depth + 1));
+    wrapper.appendChild(childrenEl);
+  }
+
+  container.appendChild(wrapper);
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+
+function openScript(id) {
+  const node = vfs[id];
+  if (!node || node.type !== 'script') return;
+
+  // Save current
+  if (monacoEditor && activeNodeId && vfs[activeNodeId]) {
+    vfs[activeNodeId].content = monacoEditor.getValue();
+  }
+
+  activeNodeId = id;
+
+  if (!openTabs.find(t => t.id === id)) {
+    openTabs.push({ id, name: node.name });
+  }
+
+  renderTabs();
+  renderTree();
+
+  const placeholder = document.getElementById('editor-placeholder');
+  placeholder.style.display = 'none';
+
+  if (monacoEditor) {
+    monacoEditor.setValue(node.content || '');
+    monacoEditor.focus();
+  }
+
+  document.getElementById('status-file').textContent = node.name + '.cat';
+}
+
+function renderTabs() {
+  const tabsEl = document.getElementById('editor-tabs');
+  tabsEl.innerHTML = '';
+  openTabs.forEach(tab => {
+    const node = vfs[tab.id];
+    const el = document.createElement('div');
+    el.className = 'editor-tab' + (activeNodeId === tab.id ? ' active' : '');
+    el.dataset.id = tab.id;
+
+    const name = document.createElement('span');
+    name.textContent = (node ? node.name : tab.name) + '.cat';
+    el.appendChild(name);
+
+    const close = document.createElement('span');
+    close.className = 'close-tab';
+    close.innerHTML = `<svg viewBox="0 0 10 10" fill="currentColor" width="10" height="10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+    close.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeTab(tab.id);
+    });
+    el.appendChild(close);
+
+    el.addEventListener('click', () => openScript(tab.id));
+    tabsEl.appendChild(el);
+  });
+}
+
+function closeTab(id) {
+  if (monacoEditor && activeNodeId === id && vfs[id]) {
+    vfs[id].content = monacoEditor.getValue();
+  }
+  openTabs = openTabs.filter(t => t.id !== id);
+  if (activeNodeId === id) {
+    const next = openTabs[openTabs.length - 1];
+    if (next) openScript(next.id);
+    else {
+      activeNodeId = null;
+      if (monacoEditor) monacoEditor.setValue('');
+      document.getElementById('editor-placeholder').style.display = 'flex';
+      document.getElementById('status-file').textContent = 'No file open';
+    }
+  }
+  renderTabs();
+}
+
+// ═══════════════════════════════════════════
+// CONTEXT MENU
+// ═══════════════════════════════════════════
+
+function showCtxMenu(id, x, y) {
+  ctxNodeId = id;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.className = 'ctx-menu open';
+
+  const node = vfs[id];
+  document.getElementById('ctx-open').style.display = node && node.type === 'script' ? '' : 'none';
+}
+
+function hideCtxMenu() {
+  document.getElementById('ctx-menu').className = 'ctx-menu';
+}
+
+// ═══════════════════════════════════════════
+// COMPILE
+// ═══════════════════════════════════════════
+
+async function compileCurrent() {
+  if (!activeNodeId || !vfs[activeNodeId]) return notify('No script open', 'error');
+
+  if (monacoEditor) vfs[activeNodeId].content = monacoEditor.getValue();
+
+  const node = vfs[activeNodeId];
+  const source = node.content || '';
+
+  setStatus('Compiling…');
+  showOutput('json');
+
+  try {
+    const res = await fetch(config.url + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source, taste: config.taste, config }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      displayJSON({ error: data.error, type: data.type });
+      notify('Compile error: ' + data.error, 'error');
+    } else {
+      displayJSON(data);
+      setStatus('Compiled successfully');
+      notify('Compiled OK', 'success');
+    }
+  } catch (e) {
+    displayFallback(source);
+    document.getElementById('compile-endpoint-hint').textContent = 'Backend unavailable — start: python3 -m catpile.web';
+  }
+}
+
+async function compileAll() {
+  if (monacoEditor && activeNodeId && vfs[activeNodeId]) {
+    vfs[activeNodeId].content = monacoEditor.getValue();
+  }
+  setStatus('Compiling full project…');
+  showOutput('json');
+
+  const scripts = getAllScripts();
+  if (scripts.length === 0) return notify('No scripts in project', 'error');
+
+  const combined = scripts.map(s =>
+    s.name !== s.name ? `script "${s.name}":\n${s.content}` : s.content
+  ).join('\n\n');
+
+  try {
+    const res = await fetch(config.url + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: combined, taste: config.taste, config }),
+    });
+    const data = await res.json();
+    displayJSON(data);
+    setStatus('Full project compiled');
+    notify('Project compiled OK', 'success');
+  } catch {
+    const pageJson = buildPageJSON();
+    displayJSON(pageJson);
+    document.getElementById('compile-endpoint-hint').textContent = 'Backend unavailable — start: python3 -m catpile.web';
+  }
+}
+
+function getAllScripts() {
+  const results = [];
+  function walk(id) {
+    const n = vfs[id];
+    if (!n) return;
+    if (n.type === 'script') results.push(n);
+    (n.children || []).forEach(walk);
+  }
+  walk(vfsRoot);
+  return results;
+}
+
+function buildPageJSON() {
+  // Reconstruct a CatWeb-like page export from the VFS for offline preview
+  const scripts = getAllScripts();
+  const ui = [];
+  function walkUI(id) {
+    const n = vfs[id];
+    if (!n) return null;
+    if (n.type === 'ui') {
+      const obj = { class: n.cls, globalid: n.globalid || n.id, name: n.name };
+      const ch = (n.children || []).map(walkUI).filter(Boolean);
+      if (ch.length) obj.children = ch;
+      return obj;
+    }
+    return null;
+  }
+  (vfs[vfsRoot]?.children || []).forEach(id => {
+    const r = walkUI(id);
+    if (r) ui.push(r);
+  });
+
+  return {
+    ui,
+    scripts: scripts.map(s => ({ alias: s.name, source: s.content })),
+    note: 'Frontend-only export. Start catpile.web for real compilation.'
+  };
+}
+
+function displayFallback(source) {
+  const preview = buildPageJSON();
+  displayJSON(preview);
+}
+
+// ═══════════════════════════════════════════
+// IMPORT / EXPORT
+// ═══════════════════════════════════════════
+
+function parseImportJSON(raw) {
+  let data;
+  try { data = JSON.parse(raw); } catch { notify('Invalid JSON', 'error'); return; }
+
+  initVFS();
+  // Guess structure: array of items, or object
+  const items = Array.isArray(data) ? data : [data];
+  items.forEach(item => importItem(item, vfsRoot));
+  renderTree();
+  saveVFS();
+  notify('Imported successfully', 'success');
+  setStatus('Import complete');
+}
+
+function importItem(item, parentId) {
+  if (!item || typeof item !== 'object') return;
+  const cls = item.class || '';
+  if (cls === 'script' || cls === 'Script') {
+    // Script block
+    const alias = item.alias || 'Script';
+    const id = addScript(alias, '', parentId);
+    // Try to decompile content array
+    if (item.content && Array.isArray(item.content)) {
+      vfs[id].content = decompileActions(item.content, config.taste);
+    }
+    (item.children || []).forEach(c => importItem(c, id));
+  } else if (cls) {
+    // UI element
+    const gid = item.globalid || item.id || newId();
+    const name = item.name || gid;
+    const uiId = addUINode(name, cls, gid, parentId);
+    (item.children || []).forEach(c => importItem(c, uiId));
+  }
+}
+
+// Basic decompiler: flat actions array → Catpile source
+function decompileActions(actions, taste = 'indent') {
+  if (!actions || !Array.isArray(actions)) return '';
+  let out = '';
+  let indent = 0;
+  const ind = () => '    '.repeat(indent);
+  const isBracket = taste === 'bracket';
+
+  for (let i = 0; i < actions.length; i++) {
+    const a = actions[i];
+    if (!a) continue;
+    const id = parseInt(a.id);
+    const text = a.text || [];
+
+    function getArg(idx) {
+      const t = text[idx];
+      if (!t) return '';
+      if (typeof t === 'string') return t;
+      if (t.value !== undefined) {
+        const v = String(t.value);
+        const isNum = /^-?\d+(\.\d+)?$/.test(v);
+        if (isNum || v === 'true' || v === 'false') return v;
+        if (t.t === 'var' || (t.t !== 'any' && !isNum)) return v;
+        return JSON.stringify(v);
+      }
+      return String(t);
+    }
+
+    const semi = isBracket ? ';' : '';
+
+    // Event headers
+    if (id === 0) { // LOADED
+      if (isBracket) out += `\non loaded {\n`; else out += `\non loaded:\n`;
+      indent = 1; continue;
+    }
+    if (id === 1) { // PRESSED
+      const el = getArg(1);
+      if (isBracket) out += `\non pressed(${el}) {\n`; else out += `\non pressed(${el}):\n`;
+      indent = 1; continue;
+    }
+    if (id === 2) { // KEY_PRESSED
+      const key = getArg(1);
+      if (isBracket) out += `\non key_pressed(${key}) {\n`; else out += `\non key_pressed(${key}):\n`;
+      indent = 1; continue;
+    }
+    if (id === 6) { // FUNC_DEF
+      const fname = getArg(1) || 'myFunc';
+      if (isBracket) out += `\nfn ${fname}() {\n`; else out += `\nfn ${fname}():\n`;
+      indent = 1; continue;
+    }
+
+    // Control flow
+    if (id === 25) { // END
+      indent = Math.max(0, indent - 1);
+      if (isBracket) out += ind() + '}\n';
+      continue;
+    }
+    if (id === 112) { // ELSE
+      if (isBracket) out += ind() + '} else {\n';
+      else out += ind() + 'else:\n';
+      continue;
+    }
+
+    // Conditions
+    const condMap = { 18:'eq', 19:'neq', 20:'gt', 21:'lt', 125:'gte', 126:'lte', 37:'contains', 38:'not_contains', 92:'exists', 93:'not_exists', 44:'and', 45:'or', 46:'nor', 47:'xor' };
+    if (condMap[id]) {
+      const a1 = getArg(1), a2 = getArg(2);
+      const fn = condMap[id];
+      if (isBracket) {
+        const opMap = {'eq':'==','neq':'!=','gt':'>','lt':'<','gte':'>=','lte':'<='};
+        const op = opMap[fn];
+        if (op) out += ind() + `if ${a1} ${op} ${a2} {\n`;
+        else out += ind() + `if ${fn}(${a1}, ${a2}) {\n`;
+      } else {
+        out += ind() + `if ${fn}(${[a1,a2].filter(Boolean).join(', ')}):\n`;
+      }
+      indent++;
+      continue;
+    }
+
+    // Loops
+    if (id === 22) { // REPEAT
+      const n = getArg(1);
+      if (isBracket) out += ind() + `repeat(${n}) {\n`; else out += ind() + `repeat(${n}):\n`;
+      indent++; continue;
+    }
+    if (id === 23) { // REPEAT_FOREVER
+      if (isBracket) out += ind() + `repeat_forever {\n`; else out += ind() + `repeat_forever:\n`;
+      indent++; continue;
+    }
+    if (id === 113) { // TABLE_ITER (foreach)
+      const tbl = getArg(1);
+      if (isBracket) out += ind() + `foreach(${tbl}) {\n`; else out += ind() + `foreach(${tbl}):\n`;
+      indent++; continue;
+    }
+    if (id === 24) { out += ind() + `break${semi}\n`; continue; }
+    if (id === 115) { out += ind() + `return ${getArg(1)}${semi}\n`; continue; }
+
+    // Variables
+    if (id === 11) { // VAR_SET
+      out += ind() + `${getArg(1)} = ${getArg(2)}${semi}\n`; continue;
+    }
+    if (id === 12) { out += ind() + `inc(${getArg(1)}, ${getArg(2)})${semi}\n`; continue; }
+    if (id === 13) { out += ind() + `dec(${getArg(1)}, ${getArg(2)})${semi}\n`; continue; }
+    if (id === 14) { out += ind() + `mul(${getArg(1)}, ${getArg(2)})${semi}\n`; continue; }
+    if (id === 15) { out += ind() + `div(${getArg(1)}, ${getArg(2)})${semi}\n`; continue; }
+
+    // Common actions
+    const actionFns = {
+      0:'log', 1:'warn', 2:'error', 3:'wait', 4:'redirect',
+      5:'play', 7:'stopAllAudio', 8:'hide', 9:'show', 10:'settext',
+      26:'playlooped', 31:'setprop', 39:'getprop', 42:'substring',
+      43:'replace', 48:'strlen', 49:'duplicate', 50:'delete',
+      51:'getUsername', 52:'getUserId', 53:'getDisplayName',
+      54:'createTable', 55:'setentry', 56:'getentry', 57:'split',
+      58:'parent', 59:'tablelen', 62:'delCookie', 63:'runbg',
+      67:'getQueryParam', 68:'timestamp', 69:'lower', 70:'upper',
+      71:'formatDate', 72:'formatFromUnix', 73:'setvolume',
+      74:'stop', 75:'pause', 76:'resume', 77:'setspeed',
+      78:'ceil', 83:'tick', 84:'getViewport', 85:'getCursor',
+      87:'run', 88:'tween', 89:'insert', 90:'deleteentry',
+      91:'remove', 94:'setProperty', 95:'getProperty', 96:'deleteVar',
+      97:'getParent', 98:'findAncestor', 99:'findChild', 100:'findDesc',
+      101:'getChildren', 102:'getDescendants', 106:'setimage',
+      107:'setavatar', 109:'concat', 110:'join', 114:'runMath',
+      116:'serverTimestamp', 117:'getUrl', 118:'timezone',
+      119:'hexToRGB', 120:'hexToHSV', 121:'rgbToHex', 122:'hsvToHex',
+      123:'lerpColor', 124:'// comment',
+      32:'broadcast', 33:'broadcastSite', 34:'setCookie',
+      35:'incCookie', 36:'getCookie', 40:'pow', 41:'mod',
+      16:'round', 17:'floor', 27:'random', 30:'gettext'
+    };
+
+    if (actionFns[id]) {
+      // Extract args from text array (skip first element which is usually the action label)
+      const args = [];
+      for (let j = 1; j < text.length; j++) {
+        args.push(getArg(j));
+      }
+      const fn = actionFns[id];
+      out += ind() + `${fn}(${args.filter(a => a !== '').join(', ')})${semi}\n`;
+      continue;
+    }
+
+    // Unknown
+    out += ind() + `# action_${id}(${text.slice(1).map((_,j) => getArg(j+1)).join(', ')})${semi}\n`;
+  }
+  return out.trim();
+}
+
+// ═══════════════════════════════════════════
+// TRANSPILER
+// ═══════════════════════════════════════════
+
+function transpile(source, toTaste) {
+  if (toTaste === 'bracket') return indentToBracket(source);
+  return bracketToIndent(source);
+}
+
+function indentToBracket(src) {
+  const lines = src.split('\n');
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trimEnd();
+    // Detect block starters ending with ':'
+    if (/^(\s*)(on\s+\w+.*|fn\s+\w+.*|if\s+.*|else|repeat\(.*|repeat_forever|foreach\(.*):$/.test(trimmed)) {
+      const m = trimmed.match(/^(\s*)(.+):$/);
+      if (m) {
+        const lead = m[1];
+        const stmt = m[2];
+        // Collect body
+        const bodyLines = [];
+        i++;
+        while (i < lines.length) {
+          const bl = lines[i];
+          const blT = bl.trimEnd();
+          if (blT === '' || blT.startsWith(lead + ' ')) {
+            bodyLines.push(blT);
+            i++;
+          } else break;
+        }
+        const bodyOut = bodyLines.map(bl => bl.slice(lead.length)).join('\n    ');
+        // Convert body recursively
+        const convertedBody = indentToBracket(bodyLines.map(bl => bl.slice(lead.length)).join('\n'));
+        const cbLines = convertedBody.split('\n').map(l => lead + '    ' + l).join('\n');
+        out.push(`${lead}${stmt} {`);
+        out.push(cbLines);
+        out.push(`${lead}}`);
+        continue;
+      }
+    } else {
+      // Regular statement — add semicolon if it's a call or assignment and not already there
+      const tl = trimmed.trimStart();
+      const isComment = tl.startsWith('#');
+      const isBlank = tl === '';
+      if (!isComment && !isBlank && !trimmed.endsWith('{') && !trimmed.endsWith('}') && !trimmed.endsWith(';')) {
+        out.push(trimmed + ';');
+      } else {
+        out.push(trimmed);
+      }
+    }
+    i++;
+  }
+  return out.join('\n').replace(/#/g, '//').trim();
+}
+
+function bracketToIndent(src) {
+  // Simple bracket → indent conversion
+  let result = src;
+  // Replace // comments with #
+  result = result.replace(/\/\//g, '#');
+  // Remove semicolons
+  result = result.replace(/;(\s*$|\s*\n)/gm, '\n');
+  result = result.replace(/;/g, '');
+  // Convert { to : and adjust indentation
+  const lines = result.split('\n');
+  const out = [];
+  let indentLevel = 0;
+  const indStr = '    ';
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trimEnd();
+    const stripped = line.trim();
+    if (stripped === '') { out.push(''); continue; }
+    if (stripped === '}') {
+      indentLevel = Math.max(0, indentLevel - 1);
+      continue;
+    }
+    if (stripped.endsWith('{')) {
+      // Block opener
+      const stmt = stripped.slice(0, -1).trimEnd();
+      out.push(indStr.repeat(indentLevel) + stmt + ':');
+      indentLevel++;
+    } else if (stripped.endsWith('} else {')) {
+      indentLevel = Math.max(0, indentLevel - 1);
+      out.push(indStr.repeat(indentLevel) + 'else:');
+      indentLevel++;
+    } else {
+      out.push(indStr.repeat(indentLevel) + stripped);
+    }
+  }
+  return out.join('\n').trim();
+}
+
+// ═══════════════════════════════════════════
+// OUTPUT PANEL
+// ═══════════════════════════════════════════
+
+function showOutput(pane) {
+  document.querySelectorAll('.output-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === pane));
+  document.querySelectorAll('.output-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + pane));
+}
+
+function displayJSON(data) {
+  const str = JSON.stringify(data, null, 2);
+  document.getElementById('json-output').innerHTML = highlightJSON(str);
+}
+
+function highlightJSON(str) {
+  return str
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="json-str">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="json-num">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+}
+
+// ═══════════════════════════════════════════
+// STATUS / NOTIFICATIONS
+// ═══════════════════════════════════════════
+
+function setStatus(msg) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 5000);
+}
+
+let notifTimeout;
+function notify(msg, type = '') {
+  const existing = document.querySelector('.notif');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'notif' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  clearTimeout(notifTimeout);
+  notifTimeout = setTimeout(() => el.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════
+// MONACO SETUP
+// ═══════════════════════════════════════════
+
+function setupMonaco() {
+  require(['vs/editor/editor.main'], function(monaco) {
+    // Register language
+    monaco.languages.register({ id: 'catpile' });
+
+    monaco.languages.setMonarchTokensProvider('catpile', {
+      tokenizer: {
+        root: [
+          [/#.*$/, 'comment'],
+          [/\/\/.*$/, 'comment'],
+          [/\b(if|else|break|return|fn|script|on)\b/, 'keyword'],
+          [/\b(repeat|repeat_forever|foreach|global|local|obj)\b/, 'keyword'],
+          [/"/, { token: 'string.quote', bracket: '@open', next: '@string' }],
+          [/\{[a-zA-Z_]\w*\}/, 'variable'],
+          [/\b\d+(\.\d+)?\b/, 'number'],
+          [/==|!=|>=|<=|->|[-+*/%^]/, 'operator'],
+          [/[a-z_]\w*(?=\s*\()/, 'support.function'],
+          [/[a-zA-Z_]\w*/, 'identifier'],
+        ],
+        string: [
+          [/[^"{]+/, 'string'],
+          [/\{[^}]+\}/, 'variable'],
+          [/"/, { token: 'string.quote', bracket: '@close', next: '@pop' }],
+        ],
+      }
+    });
+
+    monaco.editor.defineTheme('catpile-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '5a5a7a', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '7c7cf0', fontStyle: 'bold' },
+        { token: 'string', foreground: '7fd97f' },
+        { token: 'string.quote', foreground: '7fd97f' },
+        { token: 'variable', foreground: 'c5a5f5' },
+        { token: 'number', foreground: 'f0c060' },
+        { token: 'operator', foreground: 'c0c0e0' },
+        { token: 'support.function', foreground: '7bb8f0' },
+        { token: 'identifier', foreground: 'e0e0f0' },
+      ],
+      colors: {
+        'editor.background': '#18181c',
+        'editor.foreground': '#e8e8f0',
+        'editor.lineHighlightBackground': '#1e1e26',
+        'editorLineNumber.foreground': '#404050',
+        'editorLineNumber.activeForeground': '#7070a0',
+        'editor.selectionBackground': '#6c6cf030',
+        'editorCursor.foreground': '#6c6cf0',
+        'editorIndentGuide.background': '#2a2a36',
+        'editorWidget.background': '#212127',
+        'editorSuggestWidget.background': '#212127',
+        'editorSuggestWidget.border': '#3a3a46',
+        'editorSuggestWidget.selectedBackground': '#6c6cf020',
+      }
+    });
+
+    // Auto-close pairs
+    monaco.languages.setLanguageConfiguration('catpile', {
+      autoClosingPairs: [
+        { open: '"', close: '"' },
+        { open: '(', close: ')' },
+        { open: '[', close: ']' },
+        { open: '{', close: '}' },
+      ],
+      brackets: [['(', ')'], ['[', ']'], ['{', '}']],
+      indentationRules: {
+        increaseIndentPattern: /.*:\s*$/,
+        decreaseIndentPattern: /^\s*(else|elif).*:\s*$/,
+      },
+      onEnterRules: [
+        {
+          beforeText: /.*:\s*$/,
+          action: { indentAction: monaco.languages.IndentAction.Indent },
+        }
+      ],
+    });
+
+    // Completions
+    monaco.languages.registerCompletionItemProvider('catpile', {
+      triggerCharacters: ['.', '"', "'"],
+      provideCompletionItems(model, position) {
+        const word = model.getWordUntilPosition(position);
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn,
+        };
+
+        const lineText = model.getLineContent(position.lineNumber);
+        const beforeCursor = lineText.substring(0, position.column - 1);
+
+        const suggestions = [];
+        const snippets = config.taste === 'bracket' ? SNIPPETS_BRACKET : SNIPPETS_INDENT;
+
+        // Page.* completions
+        if (beforeCursor.match(/Page\.[\w.]*$/)) {
+          getAllUINodes().forEach(n => {
+            suggestions.push({
+              label: 'Page.' + n.path,
+              kind: monaco.languages.CompletionItemKind.Variable,
+              insertText: 'Page.' + n.path,
+              detail: n.cls || 'UI Element',
+              range,
+            });
+          });
+        }
+
+        // Action completions
+        ACTIONS.forEach(a => {
+          suggestions.push({
+            label: a.n,
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: a.n,
+            detail: a.sig,
+            documentation: a.desc + ` (ID: ${a.id})`,
+            range,
+          });
+        });
+
+        // Event completions (after "on ")
+        if (beforeCursor.trim().endsWith('on') || beforeCursor.match(/\bon\s+\w*$/)) {
+          EVENTS.forEach(e => {
+            suggestions.push({
+              label: e.n,
+              kind: monaco.languages.CompletionItemKind.Event,
+              insertText: e.n,
+              detail: e.sig,
+              documentation: e.desc,
+              range,
+            });
+          });
+        }
+
+        // Snippet completions
+        Object.entries(snippets).forEach(([key, body]) => {
+          suggestions.push({
+            label: key,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: body,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: 'Snippet',
+            range,
+          });
+        });
+
+        // Variable completions from current script
+        if (activeNodeId && vfs[activeNodeId]) {
+          const src = monacoEditor ? monacoEditor.getValue() : (vfs[activeNodeId].content || '');
+          const varMatches = src.matchAll(/\b([a-zA-Z_]\w*)\s*=/g);
+          const vars = new Set();
+          for (const m of varMatches) vars.add(m[1]);
+          vars.forEach(v => {
+            suggestions.push({
+              label: v,
+              kind: monaco.languages.CompletionItemKind.Variable,
+              insertText: v,
+              detail: 'local variable',
+              range,
+            });
+          });
+        }
+
+        // Function name completions
+        getAllScripts().forEach(s => {
+          const fnMatches = s.content.matchAll(/\bfn\s+(\w+)/g);
+          for (const m of fnMatches) {
+            suggestions.push({
+              label: m[1],
+              kind: monaco.languages.CompletionItemKind.Function,
+              insertText: m[1],
+              detail: 'function from ' + s.name,
+              range,
+            });
+          }
+        });
+
+        return { suggestions };
+      }
+    });
+
+    // Create editor
+    monacoEditor = monaco.editor.create(document.getElementById('monaco-container'), {
+      language: 'catpile',
+      theme: 'catpile-dark',
+      fontSize: 13,
+      fontFamily: "'Cascadia Code', 'Fira Code', 'SF Mono', monospace",
+      fontLigatures: true,
+      lineHeight: 20,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      padding: { top: 12, bottom: 12 },
+      renderLineHighlight: 'gutter',
+      smoothScrolling: true,
+      cursorBlinking: 'smooth',
+      cursorSmoothCaretAnimation: 'on',
+      wordWrap: 'off',
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: { other: true, comments: false, strings: true },
+      tabSize: 4,
+      insertSpaces: true,
+    });
+
+    // Save on change
+    monacoEditor.onDidChangeModelContent(() => {
+      if (activeNodeId && vfs[activeNodeId]) {
+        vfs[activeNodeId].content = monacoEditor.getValue();
+      }
+    });
+
+    // Keyboard shortcuts
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB, () => compileCurrent());
+    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => { saveVFS(); notify('Saved', 'success'); });
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+
+    // Restore state
+    if (!loadVFS()) {
+      initVFS();
+      // Add a sample script
+      const id = addScript('Script', TEMPLATES.loaded);
+      openScript(id);
+    } else {
+      // Reopen last active file
+      const scripts = getAllScripts();
+      if (scripts.length > 0) openScript(scripts[0].id);
+    }
+    renderTree();
+  });
+}
+
+function getAllUINodes() {
+  const results = [];
+  function walk(id, path) {
+    const n = vfs[id];
+    if (!n) return;
+    if (n.type === 'ui') {
+      const p = path ? path + '.' + n.name : n.name;
+      results.push({ path: p, cls: n.cls, id: n.id });
+      (n.children || []).forEach(c => walk(c, p));
+    } else {
+      (n.children || []).forEach(c => walk(c, path));
+    }
+  }
+  walk(vfsRoot, '');
+  return results;
+}
+
+// ═══════════════════════════════════════════
+// EVENT WIRING
+// ═══════════════════════════════════════════
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  setupMonaco();
+
+  // Toolbar buttons
+  document.getElementById('btn-compile').addEventListener('click', compileCurrent);
+  document.getElementById('btn-compile-all').addEventListener('click', compileAll);
+
+  document.getElementById('btn-new-file').addEventListener('click', () => {
+    document.getElementById('new-script-name').value = '';
+    document.getElementById('new-script-tmpl').value = 'blank';
+    document.getElementById('modal-new-script').classList.add('open');
+    setTimeout(() => document.getElementById('new-script-name').focus(), 100);
+  });
+  document.getElementById('btn-add-script').addEventListener('click', () => {
+    document.getElementById('btn-new-file').click();
+  });
+
+  document.getElementById('btn-import').addEventListener('click', () => {
+    document.getElementById('import-json-text').value = '';
+    document.getElementById('modal-import').classList.add('open');
+  });
+  document.getElementById('ph-import').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('btn-import').click();
+  });
+
+  document.getElementById('btn-export').addEventListener('click', () => {
+    if (monacoEditor && activeNodeId && vfs[activeNodeId]) {
+      vfs[activeNodeId].content = monacoEditor.getValue();
+    }
+    const data = buildPageJSON();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'catpile-export.json';
+    a.click();
+    notify('Exported', 'success');
+  });
+
+  document.getElementById('btn-transpile').addEventListener('click', () => showOutput('transpile'));
+  document.getElementById('btn-settings').addEventListener('click', () => showOutput('config'));
+
+  // Output tabs
+  document.querySelectorAll('.output-tab').forEach(t => {
+    t.addEventListener('click', () => showOutput(t.dataset.pane));
+  });
+
+  // Config
+  document.getElementById('cfg-opt').addEventListener('input', function() {
+    document.getElementById('cfg-opt-val').textContent = this.value;
+  });
+  document.getElementById('btn-save-config').addEventListener('click', saveConfigFromUI);
+
+  // Transpile
+  document.getElementById('btn-do-transpile').addEventListener('click', () => {
+    if (!activeNodeId || !vfs[activeNodeId]) return notify('No script open', 'error');
+    const src = monacoEditor ? monacoEditor.getValue() : vfs[activeNodeId].content || '';
+    const target = document.getElementById('trans-target').value;
+    transpileResult = transpile(src, target);
+    const preview = document.getElementById('transpile-preview');
+    preview.textContent = transpileResult;
+    preview.style.display = 'block';
+    document.getElementById('btn-apply-transpile').style.display = 'block';
+  });
+
+  document.getElementById('btn-apply-transpile').addEventListener('click', () => {
+    if (!transpileResult || !activeNodeId) return;
+    if (monacoEditor) monacoEditor.setValue(transpileResult);
+    if (vfs[activeNodeId]) vfs[activeNodeId].content = transpileResult;
+    notify('Transpilation applied', 'success');
+    document.getElementById('transpile-preview').style.display = 'none';
+    document.getElementById('btn-apply-transpile').style.display = 'none';
+  });
+
+  // JSON copy/download
+  document.getElementById('btn-copy-json').addEventListener('click', () => {
+    const text = document.getElementById('json-output').textContent;
+    navigator.clipboard.writeText(text).then(() => notify('Copied!', 'success'));
+  });
+
+  document.getElementById('btn-download-json').addEventListener('click', () => {
+    const text = document.getElementById('json-output').textContent;
+    try { JSON.parse(text); } catch {}
+    const blob = new Blob([text], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'compiled.json';
+    a.click();
+  });
+
+  // Import modal
+  document.getElementById('btn-import-cancel').addEventListener('click', () => {
+    document.getElementById('modal-import').classList.remove('open');
+  });
+  document.getElementById('btn-import-ok').addEventListener('click', () => {
+    const raw = document.getElementById('import-json-text').value.trim();
+    if (!raw) return notify('Paste JSON first', 'error');
+    parseImportJSON(raw);
+    document.getElementById('modal-import').classList.remove('open');
+    renderTree();
+  });
+  document.getElementById('btn-import-file').addEventListener('click', () => {
+    document.getElementById('import-file-input').click();
+  });
+  document.getElementById('import-file-input').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('import-json-text').value = e.target.result;
+    };
+    reader.readAsText(file);
+  });
+
+  // New script modal
+  document.getElementById('btn-new-cancel').addEventListener('click', () => {
+    document.getElementById('modal-new-script').classList.remove('open');
+  });
+  document.getElementById('btn-new-ok').addEventListener('click', () => {
+    const name = document.getElementById('new-script-name').value.trim() || 'Script';
+    const tmpl = document.getElementById('new-script-tmpl').value;
+    const src = config.taste === 'bracket' ? (TEMPLATES_BRACKET[tmpl] || '') : (TEMPLATES[tmpl] || '');
+    const id = addScript(name, src);
+    renderTree();
+    openScript(id);
+    document.getElementById('modal-new-script').classList.remove('open');
+    saveVFS();
+  });
+  document.getElementById('new-script-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-new-ok').click();
+  });
+
+  // Context menu actions
+  document.getElementById('ctx-open').addEventListener('click', () => {
+    if (ctxNodeId) openScript(ctxNodeId);
+    hideCtxMenu();
+  });
+  document.getElementById('ctx-rename').addEventListener('click', () => {
+    if (!ctxNodeId || !vfs[ctxNodeId]) return hideCtxMenu();
+    const node = vfs[ctxNodeId];
+    const newName = prompt('Rename to:', node.name);
+    if (newName && newName.trim()) {
+      node.name = newName.trim();
+      renderTree();
+      renderTabs();
+      saveVFS();
+    }
+    hideCtxMenu();
+  });
+  document.getElementById('ctx-duplicate').addEventListener('click', () => {
+    if (!ctxNodeId || !vfs[ctxNodeId]) return hideCtxMenu();
+    const node = vfs[ctxNodeId];
+    if (node.type === 'script') {
+      const newId = addScript(node.name + ' copy', node.content, node.parentId);
+      renderTree();
+      saveVFS();
+    }
+    hideCtxMenu();
+  });
+  document.getElementById('ctx-delete').addEventListener('click', () => {
+    if (!ctxNodeId || ctxNodeId === vfsRoot) return hideCtxMenu();
+    if (confirm(`Delete "${vfs[ctxNodeId]?.name}"?`)) {
+      deleteNode(ctxNodeId);
+      renderTree();
+      saveVFS();
+    }
+    hideCtxMenu();
+  });
+
+  document.addEventListener('click', hideCtxMenu);
+  document.getElementById('ctx-menu').addEventListener('click', e => e.stopPropagation());
+
+  // Import modal click outside
+  document.getElementById('modal-import').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+  document.getElementById('modal-new-script').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  // Auto-save VFS periodically
+  setInterval(saveVFS, 10000);
+});
+</script>
+</body>
+</html>

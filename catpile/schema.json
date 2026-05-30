@@ -1,0 +1,1843 @@
+{
+  "cwir_version": "1.0",
+  "actions": {
+    "LOG": {
+      "id": "0",
+      "text": [
+        "Log",
+        {
+          "t": "any"
+        }
+      ]
+    },
+    "WARN": {
+      "id": "1",
+      "text": [
+        "Warn",
+        {
+          "t": "any"
+        }
+      ]
+    },
+    "ERROR": {
+      "id": "2",
+      "text": [
+        "Error",
+        {
+          "t": "any"
+        }
+      ]
+    },
+    "WAIT": {
+      "id": "3",
+      "text": [
+        "Wait",
+        {
+          "t": "number"
+        },
+        "seconds"
+      ]
+    },
+    "NAV_REDIRECT": {
+      "id": "4",
+      "text": [
+        "Redirect to",
+        {
+          "t": "string",
+          "href": "true"
+        }
+      ]
+    },
+    "AUDIO_PLAY": {
+      "id": "5",
+      "text": [
+        "Play audio",
+        {
+          "t": "string",
+          "l": "id",
+          "assetbrowser": "audio"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable?"
+        }
+      ]
+    },
+    "AUDIO_STOP_ALL": {
+      "id": "7",
+      "text": [
+        "Stop all audio"
+      ]
+    },
+    "LOOK_HIDE": {
+      "id": "8",
+      "text": [
+        "Make",
+        {
+          "t": "object"
+        },
+        "invisible"
+      ]
+    },
+    "LOOK_SHOW": {
+      "id": "9",
+      "text": [
+        "Make",
+        {
+          "t": "object"
+        },
+        "visible"
+      ]
+    },
+    "LOOK_SET_TEXT": {
+      "id": "10",
+      "text": [
+        "Set",
+        {
+          "t": "object"
+        },
+        "text to",
+        {
+          "t": "string"
+        }
+      ]
+    },
+    "VAR_SET": {
+      "id": "11",
+      "text": [
+        "Set",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "to",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "VAR_INC": {
+      "id": "12",
+      "text": [
+        "Increase",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "by",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "VAR_DEC": {
+      "id": "13",
+      "text": [
+        "Decrease",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "by",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "VAR_MUL": {
+      "id": "14",
+      "text": [
+        "Multiply",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "by",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "VAR_DIV": {
+      "id": "15",
+      "text": [
+        "Divide",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "by",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "VAR_ROUND": {
+      "id": "16",
+      "text": [
+        "Round",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "VAR_FLOOR": {
+      "id": "17",
+      "text": [
+        "Floor",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "IF_EQ": {
+      "id": "18",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "is equal to",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "IF_NEQ": {
+      "id": "19",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "is not equal to",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "IF_GT": {
+      "id": "20",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "is greater than",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "IF_LT": {
+      "id": "21",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "is lower than",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "REPEAT": {
+      "id": "22",
+      "text": [
+        "Repeat",
+        {
+          "t": "number"
+        },
+        "times"
+      ]
+    },
+    "REPEAT_FOREVER": {
+      "id": "23",
+      "text": [
+        "Repeat forever"
+      ]
+    },
+    "BREAK": {
+      "id": "24",
+      "text": [
+        "Break"
+      ]
+    },
+    "END": {
+      "id": "25",
+      "text": [
+        "end"
+      ]
+    },
+    "AUDIO_PLAY_LOOP": {
+      "id": "26",
+      "text": [
+        "Play looped audio",
+        {
+          "t": "string",
+          "l": "id",
+          "assetbrowser": "audio"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable?"
+        }
+      ]
+    },
+    "VAR_RANDOM": {
+      "id": "27",
+      "text": [
+        "Set",
+        {
+          "t": "string",
+          "l": "var"
+        },
+        "to random",
+        {
+          "t": "number",
+          "l": "n"
+        },
+        "-",
+        {
+          "t": "number",
+          "l": "n"
+        }
+      ]
+    },
+    "INPUT_GET_TEXT": {
+      "id": "30",
+      "text": [
+        "Get text from",
+        {
+          "t": "object",
+          "l": "input"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "LOOK_SET_PROP": {
+      "id": "31",
+      "text": [
+        "Set",
+        {
+          "t": "string",
+          "l": "property"
+        },
+        "of",
+        {
+          "t": "object"
+        },
+        "to",
+        {
+          "t": "any"
+        }
+      ]
+    },
+    "NET_BROADCAST_PAGE": {
+      "id": "32",
+      "text": [
+        "Broadcast",
+        {
+          "t": "string",
+          "l": "message"
+        },
+        "across page"
+      ]
+    },
+    "NET_BROADCAST_SITE": {
+      "id": "33",
+      "text": [
+        "Broadcast",
+        {
+          "t": "string",
+          "l": "message"
+        },
+        "across site"
+      ]
+    },
+    "COOKIE_SET": {
+      "id": "34",
+      "text": [
+        "Set",
+        {
+          "t": "string",
+          "l": "cookie"
+        },
+        "to",
+        {
+          "t": "any"
+        }
+      ]
+    },
+    "COOKIE_INC": {
+      "id": "35",
+      "text": [
+        "Increase",
+        {
+          "t": "string",
+          "l": "cookie"
+        },
+        "by",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "COOKIE_GET": {
+      "id": "36",
+      "text": [
+        "Get cookie",
+        {
+          "t": "string",
+          "l": "cookie"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "IF_CONTAINS": {
+      "id": "37",
+      "text": [
+        "If",
+        {
+          "t": "string"
+        },
+        "contains",
+        {
+          "t": "string"
+        }
+      ]
+    },
+    "IF_NOT_CONTAINS": {
+      "id": "38",
+      "text": [
+        "If",
+        {
+          "t": "string"
+        },
+        "doesn't contain",
+        {
+          "t": "string"
+        }
+      ]
+    },
+    "LOOK_GET_PROP": {
+      "id": "39",
+      "text": [
+        "Get",
+        {
+          "t": "string",
+          "l": "property"
+        },
+        "of",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "VAR_POW": {
+      "id": "40",
+      "text": [
+        "Raise",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "to the power of",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "VAR_MOD": {
+      "id": "41",
+      "text": [
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "modulo",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "STR_SUB": {
+      "id": "42",
+      "text": [
+        "Sub",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        {
+          "t": "number",
+          "l": "start"
+        },
+        "-",
+        {
+          "t": "number",
+          "l": "end"
+        }
+      ]
+    },
+    "STR_REPLACE": {
+      "id": "43",
+      "text": [
+        "Replace",
+        {
+          "t": "string"
+        },
+        "in",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "by",
+        {
+          "t": "string"
+        }
+      ]
+    },
+    "IF_AND": {
+      "id": "44",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "AND",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "IF_OR": {
+      "id": "45",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "OR",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "IF_NOR": {
+      "id": "46",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "NOR",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "IF_XOR": {
+      "id": "47",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "XOR",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "STR_LEN": {
+      "id": "48",
+      "text": [
+        "Get length of",
+        {
+          "t": "string"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "LOOK_DUPLICATE": {
+      "id": "49",
+      "text": [
+        "Duplicate",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "LOOK_DELETE": {
+      "id": "50",
+      "text": [
+        "Delete",
+        {
+          "t": "object"
+        }
+      ]
+    },
+    "USER_GET_NAME": {
+      "id": "51",
+      "text": [
+        "Get local username →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "USER_GET_ID": {
+      "id": "52",
+      "text": [
+        "Get local user ID →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "USER_GET_DISPLAY": {
+      "id": "53",
+      "text": [
+        "Get local display name →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "TABLE_CREATE": {
+      "id": "54",
+      "text": [
+        "Create table",
+        {
+          "t": "string",
+          "l": "table"
+        }
+      ]
+    },
+    "TABLE_SET": {
+      "id": "55",
+      "text": [
+        "Set entry",
+        {
+          "t": "string",
+          "l": "entry"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "table"
+        },
+        "to",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "TABLE_GET": {
+      "id": "56",
+      "text": [
+        "Get entry",
+        {
+          "t": "string",
+          "l": "entry"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "table"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "STR_SPLIT": {
+      "id": "57",
+      "text": [
+        "Split",
+        {
+          "t": "string"
+        },
+        {
+          "t": "string",
+          "l": "separator"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "table"
+        }
+      ]
+    },
+    "HIER_PARENT": {
+      "id": "58",
+      "text": [
+        "Parent",
+        {
+          "t": "object"
+        },
+        "under",
+        {
+          "t": "object"
+        }
+      ]
+    },
+    "TABLE_LEN": {
+      "id": "59",
+      "text": [
+        "Get length of",
+        {
+          "t": "string",
+          "l": "array"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COOKIE_DEL": {
+      "id": "62",
+      "text": [
+        "Delete cookie",
+        {
+          "t": "string",
+          "l": "cookie"
+        }
+      ]
+    },
+    "FUNC_RUN_BG": {
+      "id": "63",
+      "text": [
+        "Run function in background",
+        {
+          "t": "string",
+          "l": "function"
+        },
+        {
+          "t": "tuple"
+        }
+      ]
+    },
+    "TABLE_SET_OBJ": {
+      "id": "66",
+      "text": [
+        "Set entry",
+        {
+          "t": "string",
+          "l": "entry"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "table"
+        },
+        "to",
+        {
+          "t": "object"
+        }
+      ]
+    },
+    "NAV_GET_QUERY": {
+      "id": "67",
+      "text": [
+        "Get query string parameter",
+        {
+          "t": "string"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "TIME_GET_UNIX": {
+      "id": "68",
+      "text": [
+        "Get unix timestamp →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "STR_LOWER": {
+      "id": "69",
+      "text": [
+        "Lower",
+        {
+          "t": "string"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "STR_UPPER": {
+      "id": "70",
+      "text": [
+        "Upper",
+        {
+          "t": "string"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "TIME_FORMAT_NOW": {
+      "id": "71",
+      "text": [
+        "Format current date/time",
+        {
+          "t": "string",
+          "l": "format"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "TIME_FORMAT_UNIX": {
+      "id": "72",
+      "text": [
+        "Format from unix",
+        {
+          "t": "number"
+        },
+        {
+          "t": "string",
+          "l": "format"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "AUDIO_SET_VOL": {
+      "id": "73",
+      "text": [
+        "Set volume of",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "to",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "AUDIO_STOP": {
+      "id": "74",
+      "text": [
+        "Stop audio",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "AUDIO_PAUSE": {
+      "id": "75",
+      "text": [
+        "Pause audio",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "AUDIO_RESUME": {
+      "id": "76",
+      "text": [
+        "Resume audio",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "AUDIO_SET_SPEED": {
+      "id": "77",
+      "text": [
+        "Set speed of",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "to",
+        {
+          "t": "number"
+        }
+      ]
+    },
+    "VAR_CEIL": {
+      "id": "78",
+      "text": [
+        "Ceil",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "IF_MOUSE_LEFT": {
+      "id": "79",
+      "text": [
+        "If left mouse button down"
+      ]
+    },
+    "IF_MOUSE_MIDDLE": {
+      "id": "80",
+      "text": [
+        "If middle mouse button down"
+      ]
+    },
+    "IF_MOUSE_RIGHT": {
+      "id": "81",
+      "text": [
+        "If right mouse button down"
+      ]
+    },
+    "IF_KEY_DOWN": {
+      "id": "82",
+      "text": [
+        "If",
+        {
+          "t": "key"
+        },
+        "down"
+      ]
+    },
+    "TIME_GET_TICK": {
+      "id": "83",
+      "text": [
+        "Get tick →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "INPUT_GET_VIEWPORT": {
+      "id": "84",
+      "text": [
+        "Get viewport size →",
+        {
+          "t": "string",
+          "l": "x"
+        },
+        {
+          "t": "string",
+          "l": "y"
+        }
+      ]
+    },
+    "INPUT_GET_CURSOR": {
+      "id": "85",
+      "text": [
+        "Get cursor position →",
+        {
+          "t": "string",
+          "l": "x"
+        },
+        {
+          "t": "string",
+          "l": "y"
+        }
+      ]
+    },
+    "FUNC_RUN": {
+      "id": "87",
+      "text": [
+        "Run function",
+        {
+          "t": "string",
+          "l": "function"
+        },
+        {
+          "t": "tuple"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable?"
+        }
+      ]
+    },
+    "LOOK_TWEEN": {
+      "id": "88",
+      "text": [
+        "Tween",
+        {
+          "t": "string",
+          "l": "property"
+        },
+        "of",
+        {
+          "t": "object"
+        },
+        "to",
+        {
+          "t": "any"
+        },
+        "-",
+        {
+          "t": "number",
+          "l": "time"
+        },
+        {
+          "t": "string",
+          "l": "style"
+        },
+        {
+          "t": "string",
+          "l": "direction"
+        }
+      ]
+    },
+    "TABLE_INSERT": {
+      "id": "89",
+      "text": [
+        "Insert",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "at position",
+        {
+          "t": "number",
+          "l": "number?"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "array"
+        }
+      ]
+    },
+    "TABLE_DEL": {
+      "id": "90",
+      "text": [
+        "Delete entry",
+        {
+          "t": "string",
+          "l": "entry"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "table"
+        }
+      ]
+    },
+    "TABLE_REMOVE": {
+      "id": "91",
+      "text": [
+        "Remove entry at position",
+        {
+          "t": "number",
+          "l": "number?"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "array"
+        }
+      ]
+    },
+    "IF_EXISTS": {
+      "id": "92",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "exists"
+      ]
+    },
+    "IF_NOT_EXISTS": {
+      "id": "93",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "doesn't exist"
+      ]
+    },
+    "AVAR_SET": {
+      "id": "94",
+      "text": [
+        "Set",
+        {
+          "t": "string",
+          "l": "property"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "to",
+        {
+          "t": "any"
+        }
+      ]
+    },
+    "AVAR_GET": {
+      "id": "95",
+      "text": [
+        "Get",
+        {
+          "t": "string",
+          "l": "property"
+        },
+        "of",
+        {
+          "t": "string",
+          "l": "variable"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "VAR_DEL": {
+      "id": "96",
+      "text": [
+        "Delete",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "HIER_GET_PARENT": {
+      "id": "97",
+      "text": [
+        "Get parent of",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "HIER_FIND_ANCESTOR": {
+      "id": "98",
+      "text": [
+        "Find ancestor named",
+        {
+          "t": "string"
+        },
+        "in",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "HIER_FIND_CHILD": {
+      "id": "99",
+      "text": [
+        "Find child named",
+        {
+          "t": "string"
+        },
+        "in",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "HIER_FIND_DESCENDANT": {
+      "id": "100",
+      "text": [
+        "Find descendant named",
+        {
+          "t": "string"
+        },
+        "in",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "HIER_GET_CHILDREN": {
+      "id": "101",
+      "text": [
+        "Get children of",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "table"
+        }
+      ]
+    },
+    "HIER_GET_DESCENDANTS": {
+      "id": "102",
+      "text": [
+        "Get descendants of",
+        {
+          "t": "object"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "table"
+        }
+      ]
+    },
+    "IF_IS_ANCESTOR": {
+      "id": "103",
+      "text": [
+        "If",
+        {
+          "t": "object"
+        },
+        "is ancestor of",
+        {
+          "t": "object"
+        }
+      ]
+    },
+    "IF_IS_CHILD": {
+      "id": "104",
+      "text": [
+        "If",
+        {
+          "t": "object"
+        },
+        "is child of",
+        {
+          "t": "object"
+        }
+      ]
+    },
+    "IF_IS_DESCENDANT": {
+      "id": "105",
+      "text": [
+        "If",
+        {
+          "t": "object"
+        },
+        "is descendant of",
+        {
+          "t": "object"
+        }
+      ]
+    },
+    "LOOK_SET_IMG": {
+      "id": "106",
+      "text": [
+        "Set",
+        {
+          "t": "object"
+        },
+        "image to",
+        {
+          "t": "id",
+          "assetbrowser": "image"
+        }
+      ]
+    },
+    "LOOK_SET_AVATAR": {
+      "id": "107",
+      "text": [
+        "Set",
+        {
+          "t": "object"
+        },
+        "image to avatar of",
+        {
+          "t": "number",
+          "l": "userid"
+        },
+        {
+          "t": "string",
+          "l": "resolution?"
+        }
+      ]
+    },
+    "IF_DARK_THEME": {
+      "id": "108",
+      "text": [
+        "If dark theme enabled"
+      ]
+    },
+    "STR_CONCAT": {
+      "id": "109",
+      "text": [
+        "Concatenate",
+        {
+          "t": "string"
+        },
+        "with",
+        {
+          "t": "string"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "TABLE_JOIN": {
+      "id": "110",
+      "text": [
+        "Join",
+        {
+          "t": "string",
+          "l": "array"
+        },
+        "using",
+        {
+          "t": "string",
+          "l": "string"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "ELSE": {
+      "id": "112",
+      "text": [
+        "else"
+      ]
+    },
+    "TABLE_ITER": {
+      "id": "113",
+      "text": [
+        "Iterate through",
+        {
+          "t": "string",
+          "l": "table"
+        },
+        "({l!index},{l!value})"
+      ]
+    },
+    "MATH_RUN": {
+      "id": "114",
+      "text": [
+        "Run math function",
+        {
+          "t": "string",
+          "l": "function"
+        },
+        {
+          "t": "tuple"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "RETURN": {
+      "id": "115",
+      "text": [
+        "Return",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "TIME_GET_SERVER_UNIX": {
+      "id": "116",
+      "text": [
+        "Get server unix timestamp →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "NAV_GET_URL": {
+      "id": "117",
+      "text": [
+        "Get URL →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "TIME_GET_TIMEZONE": {
+      "id": "118",
+      "text": [
+        "Get timezone →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COLOR_HEX_TO_RGB": {
+      "id": "119",
+      "text": [
+        "Convert",
+        {
+          "t": "string",
+          "l": "hex"
+        },
+        "to RGB →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COLOR_HEX_TO_HSV": {
+      "id": "120",
+      "text": [
+        "Convert",
+        {
+          "t": "string",
+          "l": "hex"
+        },
+        "to HSV →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COLOR_RGB_TO_HEX": {
+      "id": "121",
+      "text": [
+        "Convert",
+        {
+          "t": "string",
+          "l": "RGB"
+        },
+        "to hex →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COLOR_HSV_TO_HEX": {
+      "id": "122",
+      "text": [
+        "Convert",
+        {
+          "t": "string",
+          "l": "HSV"
+        },
+        "to hex →",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COLOR_LERP": {
+      "id": "123",
+      "text": [
+        "Lerp",
+        {
+          "t": "string",
+          "l": "hex"
+        },
+        "to",
+        {
+          "t": "string",
+          "l": "hex"
+        },
+        "by",
+        {
+          "t": "number",
+          "l": "alpha"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "COMMENT": {
+      "id": "124",
+      "text": [
+        {
+          "t": "string",
+          "l": "comment"
+        }
+      ]
+    },
+    "IF_GTE": {
+      "id": "125",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "is greater or equal to",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "IF_LTE": {
+      "id": "126",
+      "text": [
+        "If",
+        {
+          "t": "string",
+          "l": "any"
+        },
+        "is lower or equal to",
+        {
+          "t": "string",
+          "l": "any"
+        }
+      ]
+    },
+    "LOOK_GET_AT_POS": {
+      "id": "127",
+      "text": [
+        "Get objects at position",
+        {
+          "t": "string",
+          "l": "x"
+        },
+        {
+          "t": "string",
+          "l": "y"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "array"
+        }
+      ]
+    },
+    "FUNC_RUN_PROTECTED": {
+      "id": "128",
+      "text": [
+        "Run protected function",
+        {
+          "t": "string",
+          "l": "function"
+        },
+        {
+          "t": "tuple"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "success_variable?"
+        },
+        {
+          "t": "string",
+          "l": "variable?"
+        }
+      ]
+    },
+    "LOOK_GET_ASSET_INFO": {
+      "id": "129",
+      "text": [
+        "Get",
+        {
+          "t": "string",
+          "l": "info"
+        },
+        "of asset",
+        {
+          "t": "string",
+          "l": "id"
+        },
+        "→",
+        {
+          "t": "string",
+          "l": "variable"
+        }
+      ]
+    },
+    "NET_BROADCAST_CROSSSITE": {
+      "id": "130",
+      "text": [
+        "Broadcast",
+        {
+          "t": "string",
+          "l": "message"
+        },
+        "cross-site to",
+        {
+          "t": "string",
+          "href": "true",
+          "l": "page"
+        }
+      ]
+    }
+  },
+  "events": {
+    "LOADED": {
+      "id": "0",
+      "text": [
+        "When website loaded..."
+      ],
+      "params": []
+    },
+    "PRESSED": {
+      "id": "1",
+      "text": [
+        "When",
+        {
+          "t": "object",
+          "l": "button"
+        },
+        "pressed..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "RIGHT_CLICKED": {
+      "id": "13",
+      "text": [
+        "When",
+        {
+          "t": "object",
+          "l": "button"
+        },
+        "right clicked..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "MOUSE_ENTER": {
+      "id": "3",
+      "text": [
+        "When mouse enters",
+        {
+          "t": "object"
+        },
+        "..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "MOUSE_LEAVE": {
+      "id": "5",
+      "text": [
+        "When mouse leaves",
+        {
+          "t": "object"
+        },
+        "..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "MOUSE_DOWN": {
+      "id": "11",
+      "text": [
+        "When mouse down on",
+        {
+          "t": "object",
+          "l": "button"
+        },
+        "..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "MOUSE_UP": {
+      "id": "12",
+      "text": [
+        "When mouse up on",
+        {
+          "t": "object",
+          "l": "button"
+        },
+        "..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "KEY_PRESSED": {
+      "id": "2",
+      "text": [
+        "When",
+        {
+          "t": "key"
+        },
+        "pressed..."
+      ],
+      "params": [
+        "key"
+      ]
+    },
+    "CHANGED": {
+      "id": "10",
+      "text": [
+        "When",
+        {
+          "t": "object"
+        },
+        "changed..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "DONATION": {
+      "id": "7",
+      "text": [
+        "When",
+        {
+          "t": "object",
+          "l": "donation"
+        },
+        "bought..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "INPUT_SUBMIT": {
+      "id": "8",
+      "text": [
+        "When",
+        {
+          "t": "object",
+          "l": "input"
+        },
+        "submitted..."
+      ],
+      "params": [
+        "object"
+      ]
+    },
+    "MSG_RECEIVED": {
+      "id": "9",
+      "text": [
+        "When message received..."
+      ],
+      "params": []
+    },
+    "CROSSSITE_MSG": {
+      "id": "14",
+      "text": [
+        "When cross-site message received..."
+      ],
+      "params": []
+    },
+    "FUNC_DEF": {
+      "id": "6",
+      "text": [
+        "Define function",
+        {
+          "t": "string",
+          "l": "function"
+        }
+      ],
+      "params": [
+        "function_name",
+        "args"
+      ]
+    }
+  }
+}

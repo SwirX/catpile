@@ -1,0 +1,47 @@
+# Catpile basic syntax examples — indent taste
+
+# ─── Events ───────────────────────────────────────────────
+on loaded:
+    log("Website loaded!")
+
+on pressed("myButton"):
+    log("Button clicked")
+
+# ─── Variables ────────────────────────────────────────────
+on loaded:
+    name = "Alice"
+    score = 100
+    global highscore = 999
+    local temp = "ok"
+    log("Player {name} scored {score}")
+
+# ─── Dict & List Literals ─────────────────────────────────
+on loaded:
+    # Dict literal -> auto compiles to createTable + setentry
+    config = {
+        "volume": 0.8,
+        "theme": "dark",
+    }
+
+    # List literal -> auto compiles to createTable + numeric entries
+    items = ["a", "b", "c"]
+
+# ─── Conditions ───────────────────────────────────────────
+on loaded:
+    if gte(score, 100):
+        log("Perfect score!")
+    else:
+        log("Keep going")
+
+# ─── Loops ────────────────────────────────────────────────
+fn generate():
+    repeat(10):
+        log("Processing step")
+
+    foreach(items):
+        log("Item: {l_value}")
+
+# ─── Math ─────────────────────────────────────────────────
+on loaded:
+    n = 2 + 3 * 4      # constant folded to n = 14
+    log("{n} + 1")      # -> runtime increase action

@@ -1,0 +1,60 @@
+// Catpile bracket syntax — one-liners, { } blocks, ; terminators
+
+// ─── Events ──────────────────────────────────────────────
+on loaded { log("Website loaded!"); }
+
+on pressed("myButton") { log("Button clicked"); }
+
+// ─── Variables & Scoping ─────────────────────────────────
+on loaded {
+    name = "Alice";
+    score = 100;
+    global top = 999;
+    local tmp = "ok";
+    log("Player {name} scored {score}");
+}
+
+// ─── Dict & List Literals ────────────────────────────────
+on loaded {
+    // Dict -> createTable + setentry auto-generated
+    config = {"volume": 0.8, "theme": "dark"};
+
+    // List -> createTable + numeric entries auto-generated
+    items = ["a", "b", "c"];
+}
+
+// ─── Conditions (operator syntax) ────────────────────────
+on loaded {
+    if score >= 100 {
+        log("High score!");
+    } else {
+        log("Keep going");
+    }
+
+    if x == 5 { log("exactly five"); }
+    if x != y { log("different"); }
+    if x > 10 { log("greater"); }
+    if x < 0 { log("negative"); }
+}
+
+// ─── Loops ───────────────────────────────────────────────
+fn process() {
+    repeat(10) { log("Processing"); }
+    repeat_forever { break; }
+    foreach(table) { log("{l_index}: {l_value}"); }
+}
+
+// ─── Functions ───────────────────────────────────────────
+fn init(name, count) {
+    log("Initializing {name}");
+    repeat(count) { log("Step {l_value}"); }
+}
+
+// ─── Math ────────────────────────────────────────────────
+on loaded {
+    n = 2 + 3 * 4;   // n = 14 (constant folded)
+    m = {n} * 2;      // runtime: multiply action
+}
+
+// ─── One-liner ───────────────────────────────────────────
+on loaded { msg = "hello"; log("{msg}"); if msg == "hello" { log("yes"); } }
