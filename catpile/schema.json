@@ -1838,6 +1838,13 @@
         "function_name",
         "args"
       ]
+    },
+    "DONATION_COMPLETED": {
+      "id": "15",
+      "text": [
+        "When donation completed..."
+      ],
+      "params": []
     }
   }
 }
