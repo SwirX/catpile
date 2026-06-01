@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" alt="Catpile" width="200">
+</p>
+
 # Catpile
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()

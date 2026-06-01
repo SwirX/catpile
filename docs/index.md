@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../assets/icon.png" alt="Catpile" width="200">
+</p>
+
 # Catpile Documentation
 
 Welcome to the Catpile documentation. This covers everything from the CatLang DSL to the compiler internals, tools, and guides.

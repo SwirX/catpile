@@ -29,3 +29,6 @@ Thumbs.db
 # Project specific
 *.catui
 *.catpilerc
+
+# Not for now
+IDEAS.md
