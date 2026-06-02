@@ -123,18 +123,24 @@ Variables can have scope prefixes that map to CatWeb's `scope!name` format:
 
 Double underscore escapes: `l__name` → `l_name` (literal)
 
-## Taste Variants
+## Tastes — Pick Your Style
 
-CatLang supports two syntax variants (called **tastes**):
+Not everyone likes writing code the same way. Some people prefer Python style (colons and indentation), others prefer JS style (curly braces and semicolons). **Tastes** let you choose.
 
-- **`indent`** (default) - Python-like, uses `:` and indentation
-- **`bracket`** - JS-like, uses `{ }` and semicolons
+Think of it like writing a sentence in English vs. the same sentence in Spanish — the words are different, but the meaning is exactly the same. CatLang has two "accents" (we call them **tastes**):
 
-Switch between them with `--taste` flag:
+| Taste | Looks like | Who it's for |
+|-------|-----------|--------------|
+| **indent** (default) | Colons `:` and indentation | People who like Python |
+| **bracket** | Curly braces `{ }` and semicolons `;` | People who like JS / C++ / C# |
+
+Both produce the exact same result. It's just whichever feels more natural to *you*.
+
+### Switch between tastes
 
 ```bash
-cpile --taste indent script.cat
-cpile --taste bracket script.cat
+cpile --taste indent my_script.cat
+cpile --taste bracket my_script.cat
 ```
 
-Both tastes compile to the same CatWeb JSON.
+Or set it in your project config so you don't have to type it every time. See [Tastes — Pick Your Style](09-tastes.md) for all the details.

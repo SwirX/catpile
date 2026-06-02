@@ -18,6 +18,7 @@ The language you write in `.cat` files.
 - [Expressions & Interpolation](lang/06-expressions.md) - Math, string interpolation, dict/list literals, `Colors` class
 - [Multi-Script Projects](lang/07-multi-script.md) - The `script` directive, building pages
 - [Snippets & Examples](lang/08-snippets.md) - Common patterns with copyable code
+- [Tastes — Pick Your Style](lang/09-tastes.md) - Indent vs bracket syntax, choosing what feels right for you
 
 ## CatUI DSL
 
@@ -36,8 +37,7 @@ How Catpile transforms `.cat` and `.catui` to JSON.
 - [Intermediate Representation (IR)](compiler/02-ir.md) - AST types, expression nodes
 - [Emitter](compiler/03-emitter.md) - Schema-based slot filling, brace wrapping, ID generation
 - [Optimizer](compiler/04-optimizer.md) - Dead code elimination, inlining, loop unrolling, peephole
-- [Taste System](compiler/05-tastes.md) - Plugin architecture, how to add a new syntax variant
-- [Schema Parser](compiler/06-schema.md) - How CatWeb action schemas are loaded and used
+- [Schema Parser](compiler/05-schema.md) - How CatWeb action schemas are loaded and used
 
 ## Tools
 
