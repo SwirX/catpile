@@ -43,13 +43,6 @@ def _iter_event_fns(script: ScriptDef):
         yield "fn", i, f
 
 
-def _body_iter(owner):
-    """Yield the body list of an event or function."""
-    if isinstance(owner, (EventDef, FunctionDef)):
-        return owner.body
-    return []
-
-
 # ---------------------------------------------------------------------------
 # Level 1: Dead Code Elimination & Safe Local Transforms
 # ---------------------------------------------------------------------------

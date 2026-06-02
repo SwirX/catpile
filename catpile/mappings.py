@@ -57,20 +57,6 @@ _ACTION_ALIASES.update({
     "pause": "AUDIO_PAUSE",
     "resume": "AUDIO_RESUME",
     "broadcast": "NET_BROADCAST_PAGE",
-    "if_eq": "IF_EQ",
-    "if_neq": "IF_NEQ",
-    "if_gt": "IF_GT",
-    "if_gte": "IF_GTE",
-    "if_lt": "IF_LT",
-    "if_lte": "IF_LTE",
-    "if_contains": "IF_CONTAINS",
-    "eq": "IF_EQ",
-    "neq": "IF_NEQ",
-    "gt": "IF_GT",
-    "gte": "IF_GTE",
-    "lt": "IF_LT",
-    "lte": "IF_LTE",
-    "contains": "IF_CONTAINS",
     "repeat": "REPEAT",
     "break": "BREAK",
     "end": "END",
@@ -186,7 +172,6 @@ def make_script(alias: str | None = None) -> dict:
     Scripts require ``globalid`` and ``enabled`` fields. ``alias`` is
     optional - only included when set.
     """
-    import random, string
     gid = "".join(random.choices(
         string.ascii_letters + string.digits + "!@#$%^&*", k=4))
     result = {

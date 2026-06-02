@@ -2,8 +2,6 @@
 
 import json
 import sys
-import re
-import tempfile
 from pathlib import Path
 
 # Add project to path
@@ -264,17 +262,6 @@ def test_string_single_var():
 
 
 def test_scope_local():
-    source = """
-on loaded:
-    local msg = "hello"
-    """
-    prog = parse(source)
-    ev = prog.scripts[0].events[0]
-    assert len(ev.body) == 1
-    assert ev.body[0].name == "VAR_SET"
-
-
-def test_scope_obj():
     source = """
 on loaded:
     local msg = "hello"

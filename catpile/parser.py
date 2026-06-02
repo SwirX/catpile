@@ -46,8 +46,6 @@ Grammar (informal):
 from __future__ import annotations
 
 import re
-from typing import Any
-
 from . import ir
 from . import mappings as M
 from .ir import MathNum, MathVarRef, BinOp, MathNode, MathExpr, DictLiteral, ListLiteral, KVPair
@@ -726,17 +724,6 @@ class Parser:
             return ir.MathVarRef(arg.name)
         raise ParseError(f"Cannot use {type(arg).__name__} in math expression")
 
-    def _render_arg_to_str(self, arg: ir.Arg) -> str:
-        if isinstance(arg, ir.StrLit):
-            return arg.value
-        if isinstance(arg, ir.NumLit):
-            return arg.value
-        if isinstance(arg, ir.VarRef):
-            return "{" + arg.name + "}"
-        if isinstance(arg, ir.InterpolatedStr):
-            return self._render_arg_to_str(arg.parts[0]) if arg.parts else ""
-        return str(arg)
-
     def _parse_dict_literal(self) -> ir.DictLiteral:
         """Parse ``{key: value, ...}``."""
         self._expect("BLOCK_OPEN")
@@ -770,7 +757,6 @@ class Parser:
         Returns a list of parts (StrLit | VarRef) if interpolation found,
         or None for a plain string.
         """
-        import re
         parts: list[ir.StrLit | ir.VarRef] = []
         last = 0
         found = False

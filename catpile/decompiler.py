@@ -270,7 +270,6 @@ def _collect_if_body(actions: list[dict], start: int
         # else_body goes up to (but not including) the END at depth 0
         else_body = actions[else_body_start:i] if i > else_body_start else []
     return if_body, else_body, i + 1
-    return if_body, else_body, i
 
 
 def _extract_values(text: list, action_id: str = "",
@@ -340,7 +339,6 @@ def _extract_values(text: list, action_id: str = "",
             else:
                 values.append('""')
             slot_idx += 1
-    return values
     return values
 
 

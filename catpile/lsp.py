@@ -18,9 +18,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .tastes.registry import get_taste, list_tastes
+from .tastes.registry import get_taste
 from .mappings import ACTIONS, EVENTS, resolve_action
-from .decompiler import _collect_scripts
 
 
 class CatpileLSPServer:

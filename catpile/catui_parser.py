@@ -391,15 +391,4 @@ def parse_catui(source: str) -> CatUIProgram:
     return parser.parse()
 
 
-def _load_element_aliases() -> dict[str, str]:
-    here = Path(__file__).parent
-    schema_path = here / "ui_elements.json"
-    if schema_path.exists():
-        raw = json.loads(schema_path.read_text())
-        return raw.get("element_aliases", {})
-    return {}
 
-
-def _resolve_element_class(alias: str) -> str:
-    mapping = _load_element_aliases()
-    return mapping.get(alias.lower(), alias)

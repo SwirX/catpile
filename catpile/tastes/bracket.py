@@ -436,15 +436,6 @@ class BracketParser:
         return ActionStmt("VAR_SET", [StrLit(name), value],
                           line=line)
 
-    def _parse_scope_assignment(self) -> ActionStmt:
-        """local|obj IDENT = value  →  VAR_SET."""
-        line = self._peek().line
-        scope = self._advance().value
-        name = scope_var_name(self._expect("IDENT").value)
-        self._expect("ASSIGN")
-        value = self._parse_arg()
-        return ActionStmt("VAR_SET", [StrLit(name), value], line=line)
-
     # -- Control flow -------------------------------------------------------
 
     def _parse_if_stmt(self) -> IfStmt:
