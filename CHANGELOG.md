@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## [1.1.0] - 2026-06-02 - CatUI DSL
+
+### Added
+- **CatUI DSL** — Declarative UI definition language (`.catui` files) for describing CatWeb UI element trees. Write `page "name":` blocks with element class names, aliases, annotations, properties, and nested children.
+- **`cpile catui <page.json>` subcommand** — Decompile a CatWeb page export to CatUI DSL and `.cat` scripts in one command.
+- **Page-level metadata in CatUI DSL** — Page properties (`background`, `title`, `description`) appear as inline properties in the `page` block and round-trip through compile/decompile.
+- **23 UI element classes supported** — Frame, TextLabel, TextButton, TextBox, ImageLabel, ScrollingScrollFrame, TextButton?link, TextButton?transfer, TextButton?avataritem, Folder, UICorner, UIStroke, UIGradient, UIPadding, UIListLayout, UIGridLayout, UIAspectRatioConstraint, UISizeConstraint, UITextSizeConstraint, and more.
+- **Property aliases** — Short names in DSL (`bg` → `background_color`, `corner` → `uicorner`, etc.) with full bidirectional mapping.
+- **Element class aliases** — Short names in DSL (`button` → `TextButton`, `input` → `TextBox`, `image` → `ImageLabel`, etc.).
+- **Page-as-element IR model** — `PageDef.element: UIElement` (class="Page") unifies page metadata and children into a single tree. Recursive walks work uniformly across all containers.
+- **Multiple root elements per page** — CatWeb pages with multiple top-level elements are fully supported. All roots appear as children of the page element.
+- **Script placeholders without alias** — Decompiler generates fallback aliases (`s1`, `s2`, ...) for script elements missing an alias field.
+- **`build_gid_index()`** — Walks the CatUI AST to build alias→globalID and path→globalID index for UI linker resolution.
+- **Full round-trip** — CatWeb JSON → decompile → CatUI DSL → edit → emit → CatWeb JSON preserves element order, nesting, properties, global IDs, and page metadata.
+
+### Changed
+- **PageDef IR** — `PageDef.roots: list[UIElement]` replaced with `PageDef.element: UIElement`. The page element holds page-level properties and its children are the top-level UI elements.
+- **Builder** — `_build_from_dsl()` now returns page metadata alongside structure and script map. Metadata from the CatUI DSL is preserved and re-wrapped on compilation.
+- **Emitter** — `emit_catui()` unwraps the page element: if page properties exist, emits `{...metadata..., "webcontent": [...children...]}`; if bare, emits just the children array.
+- **Parser** — `page "name":` block body parsing now distinguishes page-level properties (key=value) from child elements, reusing `_parse_body()` for consistency.
+- **Decompiler** — `decompile_ui_to_catui()` accepts optional `metadata` dict and emits page properties inline before child elements.
+- **`decompile_page()`** — Passes page-level metadata (description, title, background, etc.) from the source JSON into the CatUI DSL output.
+- **`build_gid_index()`** — Now iterates `page.element.children` with `Page.childname` paths (not `Page.page.childname`).
+
+### Fixed
+- **Parser script body handling** — Empty script blocks (no properties, no children) no longer cause parse errors. The parser correctly detects that the next token starts a sibling element.
+- **Decompiler fallback aliases** — Script elements without an `alias` field now get generated fallback aliases (`s1`, `s2`, etc.) to produce valid CatUI DSL syntax.
+- **GID index paths** — Paths like `Page.frame_1` (not `Page.page.frame_1`) by skipping the page element's own alias in path generation.
+- **Builder backward compat** — Old-format `.catui` JSON files (with `"ui"` key) continue to work via format detection.
+- **Sandbox tests** — Updated to use `page.element.children` instead of `page.roots`/`page.root` throughout.
+
 ## [1.0.0] - 2026-05-30 - Initial Release
 
 ### Added

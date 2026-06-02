@@ -55,21 +55,9 @@ on pressed("myButton"):
 
 Compiles to: `o!header`, `o!bgColor`
 
-### Global Scope (`g_` prefix)
-
-Variables prefixed with `g_` are shared across all scripts in the page. They persist.
-
-```python
-on loaded:
-    g_users = create_table()
-    g_scores = create_table()
-```
-
-Compiles to: `g!users`, `g!scores`
-
 ### No Prefix
 
-Variables without a scope prefix are treated as **global** (same as `g_`) in CatWeb, but the variable name is used as-is:
+Variables without a scope prefix are global by default:
 
 ```python
 on loaded:
@@ -81,12 +69,11 @@ These are good for constants and page-wide state.
 
 ## Scope Keywords (Optional)
 
-You can also use `local`, `global`, and `obj` keywords for clarity:
+You can also use `local` and `obj` keywords for clarity:
 
 ```python
 on loaded:
     local temp = 5       # Same as l_temp
-    global GLOBAL_SCORE  # Same as g_GLOBAL_SCORE
     obj myButton = ...   # Same as o_myButton
 ```
 
@@ -98,7 +85,6 @@ The `scope_var_name()` function in Catpile ensures that scope-prefixed variables
 
 - `l_count` → `l!count` (local)
 - `o_header` → `o!header` (object)
-- `g_score` → `g!score` (global)
 - `l__var` → `l_var` (literal underscore - double underscore escape)
 
 When decompiling CatWeb JSON back to `.cat`, `l!count` becomes `l_count`.

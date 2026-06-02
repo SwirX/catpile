@@ -1,0 +1,394 @@
+{
+  "cwir_version": "1.0",
+  "ui_schema_version": "2.15.0.3",
+  "element_classes": {
+    "Frame": {
+      "category": "container",
+      "inherits": [],
+      "properties": {
+        "alias": "string",
+        "position": "udim2",
+        "anchor": "vector2",
+        "size": "udim2|auto",
+        "width": "udim",
+        "height": "udim",
+        "background_color": "color",
+        "background_transparency": "transparency",
+        "visible": "bool",
+        "rotation": "string",
+        "z_index": "string",
+        "order": "string",
+        "canvas": "bool",
+        "clips_descendants": "bool",
+        "active": "bool"
+      }
+    },
+    "ScrollingFrame": {
+      "category": "container",
+      "inherits": ["Frame"],
+      "properties": {
+        "canvassize": "udim2",
+        "scrollbar_thickness": "string",
+        "scrollbar_color": "color",
+        "scrollbar_transparency": "transparency",
+        "elastic": "bool",
+        "scrolling_enabled": "bool",
+        "scrolling_direction": "enum"
+      }
+    },
+    "TextLabel": {
+      "category": "text",
+      "inherits": ["Frame"],
+      "properties": {
+        "text": "string",
+        "font": "font",
+        "font_size": "font_size",
+        "font_color": "color",
+        "font_weight": "font_weight",
+        "font_style": "font_style",
+        "font_transparency": "transparency",
+        "align_x": "align_x",
+        "align_y": "align_y",
+        "line_height": "string",
+        "rich": "bool",
+        "wrap": "bool",
+        "truncate": "truncate",
+        "text_auto_resize": "bool",
+        "max_visible_graphemes": "string"
+      }
+    },
+    "TextButton": {
+      "category": "text",
+      "inherits": ["TextLabel"],
+      "properties": {
+        "auto_color": "bool"
+      }
+    },
+    "TextBox": {
+      "category": "text",
+      "inherits": ["TextLabel"],
+      "properties": {
+        "placeholder": "string",
+        "placeholder_color": "color",
+        "editable": "bool",
+        "multiline": "bool",
+        "clear_on_focus": "bool",
+        "cursor_position": "string"
+      }
+    },
+    "ImageLabel": {
+      "category": "image",
+      "inherits": ["Frame"],
+      "properties": {
+        "image_id": "string",
+        "image": "string",
+        "image_transparency": "transparency",
+        "image_color": "color",
+        "resample_mode": "resample",
+        "scale_type": "scale_type",
+        "slice_center": "rect",
+        "tile_size": "udim2"
+      }
+    },
+    "TextButton?link": {
+      "category": "link",
+      "inherits": ["TextButton"],
+      "properties": {
+        "href": "string",
+        "new_tab": "bool"
+      }
+    },
+    "TextButton?donation": {
+      "category": "donation",
+      "inherits": ["TextButton"],
+      "properties": {
+        "product": "string",
+        "product_type": "product_type",
+        "thanks_href": "string"
+      }
+    },
+    "TextButton?transfer": {
+      "category": "transfer",
+      "inherits": ["TextButton"],
+      "properties": {
+        "product": "string",
+        "product_type": "product_type",
+        "amount": "string",
+        "recipient": "string"
+      }
+    },
+    "TextButton?avataritem": {
+      "category": "avataritem",
+      "inherits": ["TextButton"],
+      "properties": {
+        "product": "string",
+        "product_type": "product_type"
+      }
+    },
+    "Folder": {
+      "category": "organizational",
+      "inherits": [],
+      "properties": {
+        "alias": "string"
+      }
+    },
+    "script": {
+      "category": "script",
+      "inherits": [],
+      "properties": {
+        "alias": "string",
+        "source": "string",
+        "enabled": "bool"
+      }
+    },
+    "UICorner": {
+      "category": "styling",
+      "inherits": [],
+      "properties": {
+        "radius": "udim"
+      }
+    },
+    "UIStroke": {
+      "category": "styling",
+      "inherits": [],
+      "properties": {
+        "stroke_color": "color",
+        "stroke_thickness": "string",
+        "stroke_transparency": "transparency",
+        "stroke_mode": "stroke_mode",
+        "stroke_type": "stroke_type",
+        "apply_to_mode": "string"
+      }
+    },
+    "UIGradient": {
+      "category": "styling",
+      "inherits": [],
+      "properties": {
+        "gradient_color": "gradient",
+        "gradient_transparency": "gradient",
+        "rotation": "string",
+        "gradient_offset": "vector2",
+        "enabled": "bool"
+      }
+    },
+    "UIPadding": {
+      "category": "styling",
+      "inherits": [],
+      "properties": {
+        "top": "udim",
+        "left": "udim",
+        "right": "udim",
+        "bottom": "udim",
+        "padding_scale": "string"
+      }
+    },
+    "UIListLayout": {
+      "category": "layout",
+      "inherits": [],
+      "properties": {
+        "direction": "direction",
+        "padding": "udim",
+        "alignment_horizontal": "align_h",
+        "alignment_vertical": "align_v",
+        "sort": "sort",
+        "wrap_list": "bool",
+        "item_line_Alignment": "align_h",
+        "new_line_alignment": "align_h",
+        "fill_direction": "direction",
+        "start_axis": "axis",
+        "horizontal_flex": "flex",
+        "vertical_flex": "flex"
+      }
+    },
+    "UIGridLayout": {
+      "category": "layout",
+      "inherits": [],
+      "properties": {
+        "size": "udim2",
+        "padding": "udim",
+        "alignment_horizontal": "align_h",
+        "alignment_vertical": "align_v",
+        "sort": "sort",
+        "fill_direction_max_cells": "string",
+        "start_corner": "corner",
+        "horizontal_flex": "flex",
+        "vertical_flex": "flex"
+      }
+    },
+    "UIAspectRatioConstraint": {
+      "category": "constraint",
+      "inherits": [],
+      "properties": {
+        "ratio": "string",
+        "dominant_axis": "axis"
+      }
+    },
+    "UISizeConstraint": {
+      "category": "constraint",
+      "inherits": [],
+      "properties": {
+        "min_size": "vector2",
+        "max_size": "vector2"
+      }
+    },
+    "UITextSizeConstraint": {
+      "category": "constraint",
+      "inherits": [],
+      "properties": {
+        "min_text_size": "string",
+        "max_text_size": "string"
+      }
+    }
+  },
+  "property_aliases": {
+    "bg": "background_color",
+    "bgcolor": "background_color",
+    "bg_col": "background_color",
+    "bg_color": "background_color",
+    "bg_transparency": "background_transparency",
+    "bgtransparency": "background_transparency",
+    "bg_trans": "background_transparency",
+    "font_color": "font_color",
+    "fontcolor": "font_color",
+    "font_col": "font_color",
+    "font_size": "font_size",
+    "fontsize": "font_size",
+    "font_weight": "font_weight",
+    "fontweight": "font_weight",
+    "font_style": "font_style",
+    "fontstyle": "font_style",
+    "font_transparency": "font_transparency",
+    "fonttransparency": "font_transparency",
+    "textcolor": "font_color",
+    "text_col": "font_color",
+    "align_x": "align_x",
+    "alignx": "align_x",
+    "align_y": "align_y",
+    "aligny": "align_y",
+    "text_align": "align_x",
+    "scroll_thickness": "scrollbar_thickness",
+    "scroll_color": "scrollbar_color",
+    "scroll_transparency": "scrollbar_transparency",
+    "scrollbartransparency": "scrollbar_transparency",
+    "img": "image",
+    "imageid": "image_id",
+    "image_trans": "image_transparency",
+    "imagecolor": "image_color",
+    "imgtransparency": "image_transparency",
+    "img_color": "image_color",
+    "radius": "radius",
+    "corner_radius": "radius",
+    "border_color": "stroke_color",
+    "border_thickness": "stroke_thickness",
+    "border_transparency": "stroke_transparency",
+    "border_mode": "stroke_mode",
+    "border_type": "stroke_type",
+    "outline_color": "stroke_color",
+    "outline_thickness": "stroke_thickness",
+    "top": "top",
+    "left": "left",
+    "right": "right",
+    "bottom": "bottom",
+    "padding_top": "top",
+    "padding_left": "left",
+    "padding_right": "right",
+    "padding_bottom": "bottom",
+    "direction": "direction",
+    "padding": "padding",
+    "list_direction": "direction",
+    "list_padding": "padding",
+    "grid_padding": "padding",
+    "ratio": "ratio",
+    "aspect_ratio": "ratio",
+    "min_size": "min_size",
+    "max_size": "max_size",
+    "min_text": "min_text_size",
+    "max_text": "max_text_size"
+  },
+  "element_aliases": {
+    "frame": "Frame",
+    "scrollingframe": "ScrollingFrame",
+    "scrollframe": "ScrollingFrame",
+    "textlabel": "TextLabel",
+    "label": "TextLabel",
+    "textbutton": "TextButton",
+    "button": "TextButton",
+    "textbox": "TextBox",
+    "input": "TextBox",
+    "imagelabel": "ImageLabel",
+    "image": "ImageLabel",
+    "link": "TextButton?link",
+    "donation": "TextButton?donation",
+    "transfer": "TextButton?transfer",
+    "avataritem": "TextButton?avataritem",
+    "folder": "Folder",
+    "uicorner": "UICorner",
+    "corner": "UICorner",
+    "uistroke": "UIStroke",
+    "stroke": "UIStroke",
+    "uigradient": "UIGradient",
+    "gradient": "UIGradient",
+    "uipadding": "UIPadding",
+    "padding": "UIPadding",
+    "uilistlayout": "UIListLayout",
+    "listlayout": "UIListLayout",
+    "uigridlayout": "UIGridLayout",
+    "gridlayout": "UIGridLayout",
+    "uiaspectratioconstraint": "UIAspectRatioConstraint",
+    "aspectratioconstraint": "UIAspectRatioConstraint",
+    "uisizeconstraint": "UISizeConstraint",
+    "sizeconstraint": "UISizeConstraint",
+    "uitextsizeconstraint": "UITextSizeConstraint",
+    "textsizeconstraint": "UITextSizeConstraint"
+  },
+  "common_properties": [
+    "alias",
+    "position",
+    "anchor",
+    "size",
+    "width",
+    "height",
+    "background_color",
+    "background_transparency",
+    "visible",
+    "rotation",
+    "z_index",
+    "order",
+    "canvas",
+    "clips_descendants",
+    "active",
+    "globalid"
+  ],
+  "property_types": {
+    "string": "String value — always quoted in DSL",
+    "udim2": "UDim2 format: \"{scale,offset},{scale,offset}\"",
+    "udim": "UDim format: \"{scale,offset}\" or \"scale,offset\"",
+    "vector2": "Comma-separated pair: \"0.5,0.5\"",
+    "color": "Hex color with or without # prefix, or RGB string",
+    "transparency": "Number from \"0\" (opaque) to \"1\" (invisible)",
+    "bool": "\"true\" or \"false\"",
+    "font": "Gotham, GothamBold, SourceSans, Roboto, or standard Roblox fonts",
+    "font_size": "\"scaled\" or a number string like \"24\"",
+    "font_weight": "Regular, Medium, Bold",
+    "font_style": "Normal, Italic",
+    "align_x": "Left, Center, Right",
+    "align_y": "Top, Center, Bottom",
+    "truncate": "AtEnd, None, SplitWord",
+    "resample": "Default, Pixelated",
+    "scale_type": "Crop, Fit, Slice, Stretch, Tile",
+    "rect": "Four integers: \"left,top,right,bottom\"",
+    "product_type": "GamePass, Asset, Product",
+    "stroke_mode": "Border, Contextual",
+    "stroke_type": "Round, Miter, Bevel",
+    "gradient": "Array format: [[pos,\"color\"],...] or [[pos,transp],...]",
+    "direction": "Vertical, Horizontal",
+    "align_h": "Left, Center, Right",
+    "align_v": "Top, Center, Bottom",
+    "sort": "LayoutOrder",
+    "axis": "Width, Height",
+    "flex": "0, 1, 2",
+    "corner": "TopLeft, TopRight, BottomLeft, BottomRight",
+    "enum": "String from a fixed set of options",
+    "auto": "One of: \"auto\", \"auto_x\", \"auto_y\""
+  }
+}

@@ -1,34 +1,10 @@
-"""Catpile project builder - compiles .cat files into CatWeb page JSON.
-
-A Catpile project is defined in ``.catpilerc``:
-
-.. code-block:: json
-
-    {
-        \"project\": \"my-app\",
-        \"taste\": \"indent\",
-        \"default_scope\": \"local\",
-        \"pages\": [
-            {
-                \"name\": \"main\",
-                \"ui\": \"ui/main.catui\",
-                \"scripts\": [\"src/main.cat\", \"src/utils.cat\"],
-                \"output\": \"build/main.json\"
-            }
-        ]
-    }
-
-Usage::
-
-    cpile build            # Build all pages from .catpilerc
-    cpile build --page main  # Build a single page
-"""
-
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
+
+from .catui_ir import CatUIProgram, UIElement, ScriptPlaceholder, UIStylingElement, build_gid_index
 
 
 def find_project_root(start: Path | None = None) -> Path | None:
@@ -56,13 +32,7 @@ def _reconstruct_from_structure(
     structure: list[dict],
     compiled_scripts: dict[str, dict],
 ) -> list[dict]:
-    """Walk structure tree, replacing script markers with compiled script JSON.
-
-    Script markers look like ``{"class": "script", "alias": "..."}`` and are
-    produced by the decompiler's ``_strip_scripts``. This function replaces
-    them with the fully compiled script dicts, preserving the original
-    order and nesting of UI elements and scripts.
-    """
+    """Walk structure tree, replacing script markers with compiled script JSON."""
     result: list[dict] = []
     for el in structure:
         if el.get("class") == "script":
@@ -70,7 +40,6 @@ def _reconstruct_from_structure(
             compiled = compiled_scripts.get(alias)
             if compiled is not None:
                 script_copy = dict(compiled)
-                # Preserve any nested scripts or elements as children
                 child_structure = el.get("children", [])
                 if child_structure:
                     compiled_children = _reconstruct_from_structure(
@@ -80,7 +49,6 @@ def _reconstruct_from_structure(
                         script_copy["children"] = compiled_children
                 result.append(script_copy)
             else:
-                # Preserve marker as-is if no compiled script found
                 result.append(dict(el))
             continue
         el_copy = dict(el)
@@ -93,31 +61,230 @@ def _reconstruct_from_structure(
     return result
 
 
-def build_page(page_cfg: dict, project_root: Path,
-               taste_name: str, default_scope: str = "local",
-               optimize: int = 0, clean: bool = True) -> str:
-    """Build a single page: compile scripts → link UI → emit JSON.
+def _collect_scripts_from_ui_elements(elements: list[dict]) -> list[dict]:
+    """Recursively find all script markers in a UI JSON structure."""
+    found: list[dict] = []
+    for el in elements:
+        if el.get("class") == "script":
+            found.append(el)
+        children = el.get("children", [])
+        if children:
+            found.extend(_collect_scripts_from_ui_elements(children))
+    return found
 
-    Args:
-        page_cfg: Page config dict with ``ui``, ``scripts``, ``output``.
-        project_root: Project root directory (for resolving relative paths).
-        taste_name: Syntax variant name.
-        default_scope: Default variable scope.
-        optimize: Optimization level (0-3).
-        clean: Whether to clean labels in output.
 
-    Returns:
-        Compiled CatWeb page JSON string.
+def _collect_scripts_from_prog(program: CatUIProgram) -> dict[str, str]:
+    """Walk CatUI AST and return {alias: source_path} for all ScriptPlaceholders."""
+    scripts: dict[str, str] = {}
+    for page in program.pages:
+        if page.element:
+            _walk_scripts(page.element, scripts)
+    return scripts
+
+
+def _walk_scripts(
+    el: UIElement | ScriptPlaceholder | UIStylingElement,
+    scripts: dict[str, str],
+) -> None:
+    if isinstance(el, ScriptPlaceholder):
+        if el.source:
+            scripts[el.alias] = el.source
+        return
+    if isinstance(el, UIElement):
+        for child in el.children:
+            _walk_scripts(child, scripts)
+
+
+def _detect_catui_format(content: str) -> tuple[bool, Any]:
+    """Detect if a .catui file is JSON (old, deprecated) or DSL (new) format.
+
+    Returns (is_dsl, parsed_data) where parsed_data is None for DSL
+    or the parsed JSON data for old format.
+    """
+    try:
+        data = json.loads(content)
+        import sys
+        print(
+            "Warning: JSON-format .catui files are deprecated and will be removed in a future release. "
+            "Run 'cpile migrate <file>.catui' to convert to the new DSL format.",
+            file=sys.stderr,
+        )
+        return False, data
+    except (json.JSONDecodeError, ValueError):
+        return True, None
+
+
+def build_page(
+    page_cfg: dict,
+    project_root: Path,
+    taste_name: str,
+    optimize: int = 0,
+    clean: bool = True,
+) -> str:
+    """Build a single page from CatUI + CatLang sources.
+
+    Supports two formats:
+
+    **New format** (``catui`` key):
+    .. code-block:: json
+
+        {"name": "main", "catui": "ui/main.catui", "output": "build/main.json"}
+
+    Scripts are discovered from ``script`` elements in the .catui file.
+
+    **Old format** (``ui`` + ``scripts`` keys):
+    .. code-block:: json
+
+        {"name": "main", "ui": "ui/main.catui", "scripts": ["src/main.cat"], "output": "build/main.json"}
     """
     from .tastes.registry import get_taste
     from .emitter import Emitter
     from .optimizer import Optimizer
     from .ir import Program
+    from .catui_emitter import emit_catui
+    from .catui_parser import parse_catui
+    from .ui import UILinker
 
-    taste = get_taste(taste_name, config={"default_scope": default_scope})
+    catui_rel = page_cfg.get("catui") or page_cfg.get("ui", "")
+    structure: list[dict] = []
+    metadata: dict[str, Any] = {}
+    script_map: dict[str, dict] = {}
+
+    if catui_rel:
+        catui_path = (project_root / catui_rel).resolve()
+        if catui_path.exists():
+            raw = catui_path.read_text()
+            is_dsl, json_data = _detect_catui_format(raw)
+
+            if is_dsl:
+                structure, script_map, meta = _build_from_dsl(
+                    raw, project_root, taste_name, optimize, clean
+                )
+                metadata.update(meta)
+            else:
+                structure, script_map, metadata = _build_from_json(
+                    json_data, page_cfg, catui_path, project_root,
+                    taste_name, optimize, clean
+                )
+    else:
+        # No .catui at all — compile scripts directly as the page content
+        taste = get_taste(taste_name, config={})
+        merged = Program()
+        for script_rel in page_cfg.get("scripts", []):
+            script_path = (project_root / script_rel).resolve()
+            if not script_path.exists():
+                raise FileNotFoundError(f"Script not found: {script_path}")
+            source = script_path.read_text()
+            prog = taste.compile(source)
+            merged.scripts.extend(prog.scripts)
+        if optimize:
+            opt = Optimizer(merged, level=optimize)
+            merged = opt.run()
+        emitter = Emitter(clean=clean)
+        script_map = {
+            s.get("alias", ""): s
+            for s in json.loads(emitter.emit(merged))
+            if s.get("alias")
+        }
+
+    if structure:
+        page_json = _reconstruct_from_structure(structure, script_map)
+    else:
+        page_json = list(script_map.values())
+
+    from .catui_emitter import DEFAULT_PAGE_METADATA
+    full_metadata = dict(DEFAULT_PAGE_METADATA)
+    full_metadata.update(metadata)
+    full_metadata["webcontent"] = page_json
+    return json.dumps(full_metadata, indent=2)
+
+
+def _build_from_dsl(
+    dsl_source: str,
+    project_root: Path,
+    taste_name: str,
+    optimize: int,
+    clean: bool,
+) -> tuple[list[dict], dict[str, dict], dict[str, Any]]:
+    """Build page from CatUI DSL source."""
+    from .tastes.registry import get_taste
+    from .emitter import Emitter
+    from .optimizer import Optimizer
+    from .ir import Program
+    from .catui_emitter import emit_catui
+    from .catui_parser import parse_catui
+    from .ui import UILinker
+
+    catui_prog = parse_catui(dsl_source)
+    scripts = _collect_scripts_from_prog(catui_prog)
+
+    taste = get_taste(taste_name, config={})
     merged = Program()
+    for alias, source_rel in scripts.items():
+        script_path = (project_root / source_rel).resolve()
+        if not script_path.exists():
+            raise FileNotFoundError(
+                f"Script {source_rel!r} (referenced by {alias!r}) not found: {script_path}"
+            )
+        source = script_path.read_text()
+        prog = taste.compile(source)
+        merged.scripts.extend(prog.scripts)
 
-    # Compile each script
+    if optimize:
+        opt = Optimizer(merged, level=optimize)
+        merged = opt.run()
+
+    gid_index = build_gid_index(catui_prog)
+    if gid_index:
+        linker = UILinker(gid_index)
+        linker.link(merged)
+
+    emitter = Emitter(clean=clean)
+    script_map = {
+        s.get("alias", ""): s
+        for s in json.loads(emitter.emit(merged))
+        if s.get("alias")
+    }
+
+    ui_json_str = emit_catui(catui_prog, clean=clean)
+    raw_structure = json.loads(ui_json_str)
+    page_metadata: dict[str, Any] = {}
+    structure: list[dict] = []
+    if isinstance(raw_structure, dict):
+        page_metadata = {k: v for k, v in raw_structure.items() if k != "webcontent"}
+        structure = raw_structure.get("webcontent", [])
+    else:
+        structure = raw_structure if isinstance(raw_structure, list) else [raw_structure]
+
+    return structure, script_map, page_metadata
+
+
+def _build_from_json(
+    json_data: Any,
+    page_cfg: dict,
+    catui_path: Path,
+    project_root: Path,
+    taste_name: str,
+    optimize: int,
+    clean: bool,
+) -> tuple[list[dict], dict[str, dict], dict[str, Any]]:
+    """Build page from old-format .catui JSON."""
+    from .tastes.registry import get_taste
+    from .emitter import Emitter
+    from .optimizer import Optimizer
+    from .ir import Program
+    from .ui import UILinker
+
+    metadata: dict[str, Any] = {}
+    structure: list[dict] = []
+    if isinstance(json_data, dict):
+        structure = json_data.get("ui", [])
+        metadata = json_data.get("metadata", {})
+    elif isinstance(json_data, list):
+        structure = json_data
+
+    taste = get_taste(taste_name, config={})
+    merged = Program()
     for script_rel in page_cfg.get("scripts", []):
         script_path = (project_root / script_rel).resolve()
         if not script_path.exists():
@@ -126,72 +293,33 @@ def build_page(page_cfg: dict, project_root: Path,
         prog = taste.compile(source)
         merged.scripts.extend(prog.scripts)
 
-    # Optimize
     if optimize:
         opt = Optimizer(merged, level=optimize)
         merged = opt.run()
 
-    # Link UI elements
-    ui_rel = page_cfg.get("ui", "")
-    catui_data: dict[str, Any] = {}
-    if ui_rel:
-        ui_path = (project_root / ui_rel).resolve()
-        if ui_path.exists():
-            from .ui import UILinker
-            linker = UILinker(ui_path)
-            linker.link(merged)
-            catui_data = json.loads(ui_path.read_text())
+    linker = UILinker.from_file(catui_path)
+    linker.link(merged)
 
-    # Emit
     emitter = Emitter(clean=clean)
-    script_json = json.loads(emitter.emit(merged))
+    script_map = {
+        s.get("alias", ""): s
+        for s in json.loads(emitter.emit(merged))
+        if s.get("alias")
+    }
 
-    # Build script map by alias
-    script_map: dict[str, dict] = {}
-    for s in script_json:
-        alias = s.get("alias", "")
-        if alias:
-            script_map[alias] = s
-
-    # Reconstruct full page from stored structure or fall back to concatenation
-    structure = catui_data.get("ui", [])
-    metadata = catui_data.get("metadata", {})
-
-    if structure:
-        page_json = _reconstruct_from_structure(structure, script_map)
-    else:
-        # Fallback: flat concatenation (for older .catui without markers)
-        ui_elements = [el for el in structure if el.get("class") != "script"] if structure else []
-        page_json = ui_elements + script_json
-
-    # Re-wrap with metadata if present (e.g. {"background": "#202020", ...})
-    if metadata:
-        result = dict(metadata)
-        result["webcontent"] = page_json
-        return json.dumps(result, indent=2)
-
-    return json.dumps(page_json, indent=2)
+    return structure, script_map, metadata
 
 
-def build_project(project_root: Path | str,
-                  page_filter: str | None = None,
-                  optimize: int = 0,
-                  clean: bool = True) -> list[Path]:
-    """Build all (or one) pages in the project.
-
-    Args:
-        project_root: Project root with .catpilerc.
-        page_filter: Optional page name to build (None = all).
-        optimize: Optimization level.
-        clean: Clean labels.
-
-    Returns:
-        List of output file paths written.
-    """
+def build_project(
+    project_root: Path | str,
+    page_filter: str | None = None,
+    optimize: int = 0,
+    clean: bool = True,
+) -> list[Path]:
+    """Build all (or one) pages in the project."""
     root = Path(project_root)
     cfg = load_project(root)
     taste = cfg.get("taste", "indent")
-    scope = cfg.get("default_scope", "local")
 
     written: list[Path] = []
     for page in cfg.get("pages", []):
@@ -204,7 +332,7 @@ def build_project(project_root: Path | str,
 
         print(f"  building {name}... ", end="", flush=True)
         try:
-            result = build_page(page, root, taste, scope, optimize, clean)
+            result = build_page(page, root, taste, optimize, clean)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(result)
             print(f"wrote {output_path}")

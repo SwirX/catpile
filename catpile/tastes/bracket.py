@@ -277,7 +277,6 @@ class BracketParser:
     def parse(self) -> Program:
         scripts: list[ScriptDef] = []
         current = ScriptDef()
-        default_scope = "local"
 
         while self._peek().kind != "EOF":
             self._skip_semicolons()
@@ -286,7 +285,7 @@ class BracketParser:
 
             t = self._peek()
 
-            if t.kind == "IDENT" and t.value in ("global", "local", "obj"):
+            if t.kind == "IDENT" and t.value in ("local", "obj"):
                 scope = self._advance().value
                 self._skip_semicolons()
                 if self._peek().kind == "IDENT" and self._peek(1).kind == "ASSIGN":
@@ -438,7 +437,7 @@ class BracketParser:
                           line=line)
 
     def _parse_scope_assignment(self) -> ActionStmt:
-        """global|local|obj IDENT = value  →  VAR_SET."""
+        """local|obj IDENT = value  →  VAR_SET."""
         line = self._peek().line
         scope = self._advance().value
         name = scope_var_name(self._expect("IDENT").value)

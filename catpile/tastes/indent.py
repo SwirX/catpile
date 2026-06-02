@@ -15,14 +15,12 @@ class IndentSyntax(Taste):
         return "indent"
 
     def compile(self, source: str) -> Program:
-        default_scope = self._config.get("default_scope", "local")
-        return indent_parse(source, default_scope=default_scope)
+        return indent_parse(source)
 
     def validate(self, source: str) -> list[dict]:
         """Quick syntax validation. Returns diagnostics."""
         try:
-            default_scope = self._config.get("default_scope", "local")
-            indent_parse(source, default_scope=default_scope)
+            indent_parse(source)
             return []
         except (SyntaxError, ParseError) as e:
             line = getattr(e, 'line', 0) or 1

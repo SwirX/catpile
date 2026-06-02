@@ -1,0 +1,4 @@
+script "s2":
+    on loaded:
+        log("Hello World_")
+

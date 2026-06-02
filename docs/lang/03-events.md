@@ -32,6 +32,7 @@ on <event_name>[(<target>)]:
 | `on submit(target):` | 8 | INPUT_SUBMIT | `target` (object) | Input form submitted |
 | `on message:` | 9 | MSG_RECEIVED | — | Broadcast message received |
 | `on crosssite_message:` | 14 | CROSSSITE_MSG | — | Cross-site message received |
+| `on donation_completed:` | 15 | DONATION_COMPLETED | — | Donation transaction completes |
 
 ## Function Definitions
 

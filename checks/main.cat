@@ -1,0 +1,6 @@
+script "main":
+    on changed(Page.TextBox_1):
+        if eq(l_changedProperty, "Text"):
+            input_get_text(Page.TextBox_1, text)
+            look_set_text(Page.TextLabel_1, text)
+

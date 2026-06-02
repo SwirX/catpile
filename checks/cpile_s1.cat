@@ -1,0 +1,4 @@
+script "s1":
+    on pressed("(parent)"):
+        log("button pressed")
+

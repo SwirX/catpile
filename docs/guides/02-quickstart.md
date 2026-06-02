@@ -120,12 +120,77 @@ on loaded:
     look_set_prop("Background Color", tile, Colors.white)
 ```
 
-## Step 8: Compile the Project
+## Step 8: Define Your UI with the CatUI DSL
+
+Instead of managing raw CatWeb JSON, describe your UI layout with the CatUI DSL (.catui files):
+
+```python
+page "main":
+    background = "#202020"
+    title = "My App"
+
+    frame container:
+        size = "{1,0},{1,0}"
+        bg = "#1a1a2e"
+
+        textlabel header:
+            text = "Welcome"
+            font_size = "30"
+            font_color = "#ffffff"
+
+        textbutton submit [globalid: "btn_main"]:
+            text = "Click Me"
+            bg = "#4e9bff"
+            size = "{0.2,0},{0.1,0}"
+            uicorner round:
+                radius = "0,8"
+
+        script game_logic:
+
+    textbox input:
+        editable = "true"
+        placeholder = "Enter name"
+        placeholder_color = "#b2b2b2"
+```
+
+## Step 9: Build the Full Page
+
+Create a `.catpilerc` project config:
+
+```json
+{
+  "taste": "indent",
+  "pages": [
+    {
+      "name": "main",
+      "catui": "ui/main.catui",
+      "output": "build/main.json"
+    }
+  ]
+}
+```
+
+Then build:
 
 ```bash
-# Compile all scripts
-cat *.cat | cpile -o project.json
-
-# Or use the web editor's Full Project button
-# to compile and download in one click
+cpile build
 ```
+
+This parses the CatUI DSL, compiles referenced `.cat` scripts, resolves path-based UI references, and produces a complete CatWeb-compatible JSON file.
+
+## Decompiling a CatWeb Page to CatUI DSL
+
+```bash
+# Full round-trip: scripts + UI layout + project config
+cpile decompile page.json -o output-dir/
+
+# Or extract just the UI layout (no scripts)
+cpile catui page.json -o layout.catui
+```
+
+This decomposes a CatWeb export into:
+- `page.catui` — editable CatUI DSL describing the UI layout
+- `scripts/` — one `.cat` file per script, decompiled to editable CatLang
+- `.catpilerc` — ready-to-use project config for recompilation
+
+Use `cpile catui` instead of `cpile decompile` when you already have your `.cat` scripts and only need the UI layout as readable DSL.

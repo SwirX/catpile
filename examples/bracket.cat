@@ -9,7 +9,6 @@ on pressed("myButton") { log("Button clicked"); }
 on loaded {
     name = "Alice";
     score = 100;
-    global top = 999;
     local tmp = "ok";
     log("Player {name} scored {score}");
 }

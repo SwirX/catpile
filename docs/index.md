@@ -4,14 +4,14 @@
 
 # Catpile Documentation
 
-Welcome to the Catpile documentation. This covers everything from the CatLang DSL to the compiler internals, tools, and guides.
+Welcome to the Catpile documentation. This covers everything from the CatLang DSL to the compiler internals, CatUI DSL for UI layout, tools, and guides.
 
 ## CatLang Language Reference
 
 The language you write in `.cat` files.
 
 - [Overview & Syntax](lang/01-overview.md) - Indentation rules, file structure, comments
-- [Variables & Scopes](lang/02-variables.md) - `l_`, `o_`, `g_` prefixes, `local`/`global`/`obj` keywords, assignment
+- [Variables & Scopes](lang/02-variables.md) - `l_`, `o_` prefixes, `local`/`obj` keywords, assignment
 - [Events](lang/03-events.md) - All 14 event types, parameters, function definitions
 - [Actions](lang/04-actions.md) - All 122 actions by category, call syntax, slot types, multi-return
 - [Control Flow](lang/05-control-flow.md) - `if`/`else`, `repeat`, `repeat_forever`, `foreach`, `break`, `return`
@@ -19,11 +19,20 @@ The language you write in `.cat` files.
 - [Multi-Script Projects](lang/07-multi-script.md) - The `script` directive, building pages
 - [Snippets & Examples](lang/08-snippets.md) - Common patterns with copyable code
 
+## CatUI DSL
+
+Declarative UI layout in `.catui` files.
+
+- [Language Reference](catui/01-language-reference.md) — Complete syntax reference: element classes, property aliases, styling elements, annotations, examples, and compilation guide
+- [Quickstart: Defining UI](guides/02-quickstart.md) — Step-by-step CatUI DSL tutorial
+- [Project System](guides/03-projects.md) — Building full pages with `.catui` + `.cat` files
+- [Decompiling](guides/04-decompiling.md) — Reverse-engineering CatWeb JSON to CatUI DSL
+
 ## Compiler Internals
 
-How Catpile transforms `.cat` to JSON.
+How Catpile transforms `.cat` and `.catui` to JSON.
 
-- [Pipeline Overview](compiler/01-pipeline.md) - Tokenizer → Parser → IR → Optimizer → UI Linker → Emitter
+- [Pipeline Overview](compiler/01-pipeline.md) - Tokenizer → Parser → IR → Optimizer → UI Linker → Emitter → Builder
 - [Intermediate Representation (IR)](compiler/02-ir.md) - AST types, expression nodes
 - [Emitter](compiler/03-emitter.md) - Schema-based slot filling, brace wrapping, ID generation
 - [Optimizer](compiler/04-optimizer.md) - Dead code elimination, inlining, loop unrolling, peephole

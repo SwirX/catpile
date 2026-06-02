@@ -645,14 +645,6 @@ input[type=range].config-control {
           </select>
         </div>
         <div class="config-group">
-          <div class="config-label">Default Scope</div>
-          <select class="config-control" id="cfg-scope">
-            <option value="local">local</option>
-            <option value="global">global</option>
-            <option value="obj">obj</option>
-          </select>
-        </div>
-        <div class="config-group">
           <div class="config-label">Optimization Level</div>
           <div class="range-row">
             <input type="range" class="config-control" id="cfg-opt" min="0" max="3" value="0">
@@ -972,7 +964,6 @@ let vfsRoot = 'page';
 // Config
 let config = {
   taste: 'indent',
-  scope: 'local',
   opt: 0,
   clean: true,
   minify: false,
@@ -989,7 +980,6 @@ function loadConfig() {
 
 function saveConfigFromUI() {
   config.taste = document.getElementById('cfg-taste').value;
-  config.scope = document.getElementById('cfg-scope').value;
   config.opt = parseInt(document.getElementById('cfg-opt').value);
   config.clean = document.getElementById('cfg-clean').checked;
   config.minify = document.getElementById('cfg-minify').checked;
@@ -1001,7 +991,6 @@ function saveConfigFromUI() {
 
 function applyConfigToUI() {
   document.getElementById('cfg-taste').value = config.taste;
-  document.getElementById('cfg-scope').value = config.scope;
   document.getElementById('cfg-opt').value = config.opt;
   document.getElementById('cfg-opt-val').textContent = config.opt;
   document.getElementById('cfg-clean').checked = config.clean;

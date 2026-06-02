@@ -1,12 +1,18 @@
 # Tools: CLI Reference
 
-The `cpile` command-line tool compiles `.cat` files to CatWeb JSON.
+The `cpile` command-line tool compiles `.cat` files to CatWeb JSON and works with CatUI DSL `.catui` files.
 
 ## Basic Usage
 
 ```bash
-# Compile a single file
+# Compile a single script
 cpile script.cat
+
+# Decompile a CatWeb page to scripts + CatUI DSL
+cpile catui page.json -o output-dir/
+
+# Build a full project from .catpilerc
+cpile build
 
 # Output to file
 cpile script.cat -o output.json
@@ -15,17 +21,67 @@ cpile script.cat -o output.json
 cpile script.cat --stdout
 ```
 
+## Commands
+
+### `compile` (default)
+
+Compile `.cat` source to CatWeb JSON.
+
+### `decompile` — Decompile a Full Page
+
+```bash
+cpile decompile page.json -o output-dir/
+```
+
+Full round-trip decompilation: extracts scripts, UI layout, and project config.
+
+Produces:
+- `{alias}.cat` — one `.cat` file per script, decompiled to editable CatLang
+- `{stem}.catui` — UI layout as CatUI DSL
+- `.catpilerc` — project config ready for `cpile build`
+
+```
+cpile decompile [-h] [-o OUTPUT_DIR] file
+```
+
+| Argument | Description |
+|----------|-------------|
+| `file` | CatWeb page JSON file |
+| `-o, --output-dir` | Output directory (default: same as input) |
+
+### `catui` — Extract UI Layout Only
+
+```bash
+cpile catui page.json -o layout.catui
+```
+
+Narrower than `decompile`: extracts just the UI element tree as CatUI DSL, without decompiling scripts or generating a project config.
+
+```
+cpile catui [-h] [-o OUTPUT] file
+```
+
+| Argument | Description |
+|----------|-------------|
+| `file` | CatWeb page JSON file |
+| `-o, --output` | Output `.catui` file (default: stdout) |
+
+Use this when you already have your `.cat` scripts and only need the UI layout as editable DSL.
+
+### `build` — Build a Full Project
+
 ## Command Line
 
 ```
 usage: cpile [-h] [-o OUTPUT] [-t TASTE] [--stdout] [--debug] 
              [--catui CATUI] [-O {0,1,2,3}]
-             [file]
+             [file ...]
 
-Compile CatLang (.cat) to CatWeb JSON.
+Compile CatLang (.cat) to CatWeb JSON. Also compiles CatUI DSL (.catui)
+to CatWeb UI JSON.
 
 positional arguments:
-  file                  .cat file to compile (default: stdin)
+  file                  .cat or .catui file(s) to compile (default: stdin)
 
 options:
   -h, --help            Show help message
@@ -40,6 +96,12 @@ options:
 ### Examples
 
 ```bash
+# Compile a .cat script
+cpile compile script.cat -o output.json
+
+# Compile a .catui UI layout to JSON
+cpile compile ui/page.catui -o page.json
+
 # Compile with bracket syntax
 cpile --taste bracket script.cat -o output.json
 

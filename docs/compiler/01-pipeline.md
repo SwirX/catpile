@@ -1,6 +1,8 @@
 # Compiler: Pipeline Overview
 
-Catpile transforms `.cat` source code into CatWeb-compatible JSON through a multi-stage pipeline.
+Catpile transforms `.cat` source code into CatWeb-compatible JSON through a multi-stage pipeline. Additionally, CatUI DSL (`.catui`) files are compiled to CatWeb UI JSON.
+
+## Script Pipeline
 
 ```
 .cat source
@@ -31,7 +33,7 @@ Catpile transforms `.cat` source code into CatWeb-compatible JSON through a mult
        ▼
 ┌─────────────┐
 │  UI Linker   │  Resolves page. references → global IDs
-│              │  Reads .catui for path→globalID mapping
+│              │  Reads CatUI AST for path→globalID mapping
 └──────┬──────┘
        │
        ▼
@@ -42,12 +44,39 @@ Catpile transforms `.cat` source code into CatWeb-compatible JSON through a mult
        │
        ▼
 ┌─────────────┐
-│  Builder     │  Merges scripts with UI tree
-│              │  Generates {favicon, webcontent, ...} output
+│  Builder     │  Merges scripts with UI tree from CatUI DSL
+│              │  Generates {background, webcontent, title, ...} output
 └──────┬──────┘
        │
        ▼
    CatWeb JSON
+```
+
+## CatUI DSL Pipeline
+
+```
+.catui source
+    │
+    ▼
+┌──────────────────┐
+│ CatUI Tokenizer   │  Indentation-based → tokens (IDENT, STRING, ASSIGN, etc.)
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ CatUI Parser      │  Tokens → CatUI IR (PageDef, UIElement, etc.)
+│                   │  Page properties → element properties, children → sub-elements
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ CatUI Emitter     │  CatUI IR → CatWeb UI JSON array
+│                   │  Unwraps page element: metadata + webcontent
+│                   │  Resolves property/class aliases, assigns global IDs
+└────────┬─────────┘
+         │
+         ▼
+   CatWeb UI JSON (→ Builder merges with compiled scripts)
 ```
 
 <PipelineViz />
@@ -159,5 +188,64 @@ CatWeb JSON → [Extract Scripts] → [Decompile Actions] → .cat
 The decompiler:
 1. Walks the JSON tree to find all scripts
 2. Converts flat `END`-terminated action arrays to indented blocks
-3. Resolves global IDs to page paths using the `.catui` paths map
-4. Outputs `.cat`, `.catui`, and `.json` files
+3. Resolves global IDs to page paths using the CatUI AST paths map
+4. Outputs `.cat`, `.catui`, and `.catpilerc` files
+
+### 8. CatUI DSL Parser & Emitter
+
+The CatUI DSL pipeline runs alongside the script pipeline in the builder:
+
+**.catui Tokenizer** (`catui_parser.py`):
+- Indentation-based tokenizer similar to the indent taste
+- Produces `IDENT`, `STRING`, `NUMBER`, `ASSIGN`, `COLON`, `LBRACKET`, `RBRACKET`, `INDENT`, `DEDENT`, `KEYWORD`, `EOF` tokens
+
+**.catui Parser** (`catui_parser.py`):
+- `page "name":` blocks containing properties and child elements
+- Element syntax: `class_name alias [annotations]:`
+- Annotations: `[globalid: "value"]`
+- Properties: `key = value`
+- Styling elements (UICorner, UIStroke, etc.) nested inside parents
+- Script placeholders: `script alias:`
+
+**CatUI IR** (`catui_ir.py`):
+- `CatUIProgram` — list of `PageDef`
+- `PageDef` — `name` + `element: UIElement` (class="Page")
+- `UIElement` — `class_name`, `alias`, `globalid`, `properties`, `children`
+- `UIStylingElement` — styling elements with `class_name`, `alias`, `properties`
+- `ScriptPlaceholder` — `alias`, `source`, `enabled`
+
+**.catui Emitter** (`catui_emitter.py`):
+- Walks CatUI IR → CatWeb UI JSON
+- Page element unwrapped: properties → metadata, children → webcontent
+- Property alias resolution (`bg` → `background_color`)
+- Element class alias resolution (`button` → `TextButton`)
+- Auto global ID generation
+- Script markers emitted as `{"class": "script", "alias": "..."}`
+
+**UI Elements Schema** (`ui_elements.json`):
+- 23 element classes with property definitions and type info
+- Property aliases (DSL ↔ JSON) for bidirectional mapping
+- Element class aliases (`textbutton` → `TextButton`, `transfer` → `TextButton?transfer`, etc.)
+
+## File Type Handling — No Auto-Deduction
+
+The CLI uses explicit subcommands, not extension-based dispatch:
+
+| Command | Input | Handles |
+|---------|-------|---------|
+| `cpile compile script.cat` | `.cat` | CatLang → script JSON |
+| `cpile decompile page.json` | `.json` | CatWeb page → `.cat` + `.catui` + `.catpilerc` |
+| `cpile catui page.json` | `.json` | CatWeb page → `.catui` only |
+| `cpile build` | `.catpilerc` | Project config → compiled page JSON |
+
+There is no `cpile mypage.catui` that auto-detects and emits JSON, because `.catui` files need the full builder pipeline (script compilation, UI linking, metadata wrapping) — not a simple file-in/JSON-out conversion. Inside `build`, the builder does auto-detect `.catui` DSL vs old JSON format via `_detect_catui_format()`.
+
+## No Header Files
+
+Catpile has no header/include system. Scripts and UI definitions are fully self-contained:
+
+- **`.cat` scripts** declare their own `script "alias":` wrapper. Functions are defined and used within the same file or across files at runtime — no forward declarations needed.
+- **`.catui` files** declare the complete element tree. Path-based references (`Page.myButton`) are resolved at compile time by the UI linker using an index built from the CatUI AST, not from headers.
+- **The builder** orchestrates: reads `.catui`, discovers referenced `.cat` sources, compiles each independently, resolves paths via the linker, and merges everything.
+
+Adding headers would require duplicating function signatures or element declarations with no benefit — everything needed for compilation is already discoverable from the source files.

@@ -96,15 +96,24 @@ class UILinker:
 
     After linking, references like ``hide(myButton)`` are resolved to
     the actual globalID from the UI definition file.
+
+    Accepts either an index dict directly (from CatUI AST) or a path to a
+    ``.catui`` JSON file (backward compat). Use ``from_file()`` for explicit
+    file-based construction.
     """
 
-    def __init__(self, ui_path: str | Path) -> None:
-        self._index, self._paths = load_ui(ui_path)
-        # Merge paths into index for convenient lookups
-        self._index.update(self._paths)
-        # Also build a reverse mapping: dotted path → path itself
-        # so ObjectRef("Page.Button") resolves via paths dict
+    def __init__(self, source: dict[str, str] | str | Path) -> None:
+        if isinstance(source, (str, Path)):
+            self._index, self._paths = load_ui(source)
+            self._index.update(self._paths)
+        else:
+            self._index = source
         self._resolved: int = 0
+
+    @classmethod
+    def from_file(cls, ui_path: str | Path) -> UILinker:
+        """Construct a UILinker from a .catui JSON file path."""
+        return cls(ui_path)
 
     def link(self, program: Program) -> int:
         """Walk the program IR and resolve element name references.

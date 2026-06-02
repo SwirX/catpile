@@ -394,6 +394,15 @@ def _is_valid_dotted_path(s: str) -> bool:
     return len(parts) >= 2 and all(_is_valid_ident(p) for p in parts)
 
 
+def _is_var_ref(s: str) -> bool:
+    """Check if *s* is a CatWeb variable reference ``{name}``."""
+    if not (s.startswith("{") and s.endswith("}") and len(s) > 2):
+        return False
+    inner = s[1:-1]
+    clean = inner.replace("!", "_").replace("-", "_")
+    return clean.isidentifier()
+
+
 def _escape_str(s: str,
                 gid_to_path: dict[str, str] | None = None) -> str:
     """Escape a string value for .cat source output.
@@ -559,17 +568,20 @@ for _aid_str, _aname in _ID_TO_ACTION.items():
 
 
 def decompile_script(script: dict,
-                     gid_to_path: dict[str, str] | None = None) -> str:
+                     gid_to_path: dict[str, str] | None = None,
+                     forced_alias: str | None = None) -> str:
     """Decompile a single CatWeb script object → .cat source code.
 
     Args:
         script: A CatWeb script dict with ``content`` → event blocks.
         gid_to_path: Optional map of globalID → page path for path resolution.
+        forced_alias: When set, always emit a ``script "alias":`` wrapper
+            using this alias, even if the original script has none.
 
     Returns:
         Catpile .cat source code as a string.
     """
-    alias = script.get("alias", "")
+    alias = forced_alias or script.get("alias", "")
     events = script.get("content", [])
     indent = "    "
 
@@ -580,7 +592,6 @@ def decompile_script(script: dict,
     for ev in events:
         decompiled = decompile_event(ev, indent, gid_to_path)
         if alias:
-            # Indent each event line under the script block
             indented = "\n".join(indent + line if line.strip() else line
                                 for line in decompiled.split("\n"))
             parts.append(indented)
@@ -591,85 +602,191 @@ def decompile_script(script: dict,
 
 
 # ---------------------------------------------------------------------------
-# UI Decompiler - Element Path Hierarchy
+# UI Decompiler - CatUI DSL Output
 # ---------------------------------------------------------------------------
 
-def decompile_ui(ui_list: list[dict]) -> dict:
-    """Decompile a CatWeb UI JSON array into a path hierarchy.
+def _load_inverse_aliases() -> tuple[dict[str, str], dict[str, str]]:
+    """Load ui_elements.json and build inverse alias maps for decompilation.
 
-    Filters out ``script`` class objects (those go to the script decompiler).
-    Builds a tree with path-based access:
-
-        Page.header → globalid "headerFrame"
-        Page.header.title → globalid "titleLabel"
-
-    Returns a dict with:
-        ``ui``: Original UI JSON (preserved for re-compilation)
-        ``paths``: Dict mapping element paths to their globalIDs
-        ``tree``: Nested hierarchy tree
+    Returns (json_class_to_dsl, json_prop_to_dsl):
+      - Maps JSON class names to canonical DSL class names
+        (e.g. ``Frame`` → ``frame``, ``TextButton?link`` → ``link``)
+      - Maps JSON property names to canonical DSL aliases
+        (e.g. ``background_color`` → ``bg``, ``font_color`` → ``font_color``)
     """
-    # Filter out script elements (top level AND nested)
-    ui_elements = _strip_scripts(ui_list)
+    here = Path(__file__).parent
+    schema_path = here / "ui_elements.json"
+    if not schema_path.exists():
+        return {}, {}
 
-    paths: dict[str, str] = {}
-    tree = _build_tree(ui_elements, paths)
+    import json as _json
+    schema = _json.loads(schema_path.read_text())
 
-    return {
-        "ui": ui_elements,
-        "paths": paths,
-        "tree": tree,
-    }
+    element_aliases = schema.get("element_aliases", {})
+    prop_aliases = schema.get("property_aliases", {})
+
+    class_to_dsl: dict[str, str] = {}
+    known_classes = set(schema.get("element_classes", {}).keys())
+
+    for json_cls in known_classes:
+        if "?" in json_cls:
+            dsl_name = json_cls.split("?")[1].lower()
+        else:
+            dsl_name = json_cls.lower()
+        class_to_dsl[json_cls] = dsl_name
+
+    prop_to_dsl: dict[str, str] = {}
+    handled_identity: set[str] = set()
+
+    for dsl_key, json_key in prop_aliases.items():
+        if dsl_key == json_key:
+            prop_to_dsl[json_key] = dsl_key
+            handled_identity.add(json_key)
+
+    for dsl_key, json_key in prop_aliases.items():
+        if dsl_key == json_key:
+            continue
+        if json_key not in prop_to_dsl:
+            prop_to_dsl[json_key] = dsl_key
+
+    for cls_name, cls_info in schema.get("element_classes", {}).items():
+        for json_key in cls_info.get("properties", {}):
+            if json_key not in prop_to_dsl:
+                prop_to_dsl[json_key] = json_key
+
+    return class_to_dsl, prop_to_dsl
 
 
-def _build_tree(elements: list[dict],
-                paths: dict[str, str],
-                prefix: str = "Page",
-                _class_counts: dict[str, int] | None = None) -> list[dict]:
-    """Recursively build element tree and populate path → globalID map.
+def decompile_ui_to_catui(
+    elements: list[dict],
+    metadata: dict | None = None,
+    script_sources: dict[str, str] | None = None,
+) -> str:
+    """Walk CatWeb UI JSON element tree → CatUI DSL source text.
 
-    Skips ``class: script`` elements (handled separately).
-    Elements without an explicit ``alias`` or ``name`` get a class-based
-    name with an index (e.g. ``Frame_1``, ``TextButton_2``).
+    Produces a ``.catui`` file in the new DSL format:
+
+    .. code-block:: python
+
+        page \"main\":
+            frame root [globalid: \"abc123\"]:
+                size = \"{1,0},{1,0}\"
+                bg = \"#1a1a2e\"
+                textlabel title:
+                    text = \"Welcome\"
+                script sidebar_logic:
+                    source = \"src/sidebar.cat\"
+
+    Args:
+        elements: List of top-level UI element dicts.
+        metadata: Optional dict of page-level properties (background, title, etc.).
+        script_sources: Optional mapping of script alias → .cat filename.
+
+    Returns the CatUI DSL source as a string.
     """
+    class_to_dsl, prop_to_dsl = _load_inverse_aliases()
+    lines: list[str] = []
+    lines.append('page "page":')
+    lines.append("")
+
+    # Emit page-level metadata as properties
+    if metadata:
+        inner_pad = "    " * 1
+        for key, value in metadata.items():
+            if key in ("name",):  # name is already the page header
+                continue
+            escaped = _escape_catui_value(value)
+            lines.append(f"{inner_pad}{key} = {escaped}")
+        if metadata:
+            lines.append("")
+
+    _emit_catui_dsl(lines, elements, 1, class_to_dsl, prop_to_dsl, script_sources=script_sources)
+    return "\n".join(lines) + "\n"
+
+
+def _emit_catui_dsl(
+    lines: list[str],
+    elements: list[dict],
+    level: int,
+    class_to_dsl: dict[str, str],
+    prop_to_dsl: dict[str, str],
+    _class_counts: dict[str, int] | None = None,
+    script_sources: dict[str, str] | None = None,
+) -> None:
+    """Recursively emit CatUI DSL lines for a list of elements."""
     if _class_counts is None:
         _class_counts = {}
-    nodes: list[dict] = []
+    pad = "    " * level
+
     for el in elements:
-        if el.get("class") == "script":
-            continue
-        gid = el.get("globalid", "")
         cls = el.get("class", "Frame")
+        alias = el.get("alias") or el.get("name", "")
+        gid = el.get("globalid", "")
+        dsl_cls = class_to_dsl.get(cls, cls.lower())
 
-        # Use alias or name; fall back to <class>_<index>
-        name = el.get("alias") or el.get("name")
-        if not name:
+        if cls == "script":
+            if not alias:
+                _class_counts["__script__"] = _class_counts.get("__script__", 0) + 1
+                alias = f"s{_class_counts['__script__']}"
+            lines.append(f"{pad}script {alias}:")
+            source = (script_sources or {}).get(alias)
+            if source:
+                lines.append(f'{pad}    source = "{source}"')
+            continue
+
+        if not alias:
             _class_counts[cls] = _class_counts.get(cls, 0) + 1
-            name = f"{cls}_{_class_counts[cls]}"
+            alias = f"{dsl_cls}_{_class_counts[cls]}"
 
-        # Handle duplicate aliases - append counter
-        base_path = f"{prefix}.{name}" if prefix else name
-        path = base_path
-        counter = 1
-        while path in paths:
-            counter += 1
-            path = f"{base_path}_{counter}"
+        # Build annotation string
+        annot = ""
+        if gid:
+            escaped_gid = gid.replace("\\", "\\\\").replace('"', '\\"')
+            annot = f' [globalid: "{escaped_gid}"]'
 
-        paths[path] = gid
+        lines.append(f"{pad}{dsl_cls} {alias}{annot}:")
 
-        node = {
-            "name": name,
-            "globalid": gid,
-            "class": cls,
-        }
+        # Collect all properties (filter out class/globalid/alias/children)
+        skip_keys = {"class", "globalid", "alias", "children", "name"}
+        props = {k: v for k, v in el.items() if k not in skip_keys and not k.startswith("_")}
 
         children = el.get("children", [])
-        if children:
-            node["children"] = _build_tree(children, paths, path,
-                                           _class_counts)
 
-        nodes.append(node)
+        if props or children:
+            inner_pad = "    " * (level + 1)
+            for key, value in props.items():
+                dsl_key = prop_to_dsl.get(key, key)
+                escaped = _escape_catui_value(value)
+                lines.append(f"{inner_pad}{dsl_key} = {escaped}")
 
-    return nodes
+            if children:
+                _emit_catui_dsl(
+                    lines, children, level + 1, class_to_dsl, prop_to_dsl, _class_counts
+                )
+
+
+def _escape_catui_value(value: Any) -> str:
+    """Format a property value for CatUI DSL output.
+
+    Strings that look like bare identifiers or numbers get emitted bare.
+    Everything else (including UDim2 values, color strings, multi-word text)
+    gets quoted.
+    """
+    if isinstance(value, str):
+        if _is_var_ref(value):
+            return value
+        try:
+            float(value)
+            return value
+        except (ValueError, TypeError):
+            pass
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return json.dumps(value)
 
 
 # ---------------------------------------------------------------------------
@@ -677,16 +794,11 @@ def _build_tree(elements: list[dict],
 # ---------------------------------------------------------------------------
 
 def _collect_scripts(elements: list[dict]) -> list[dict]:
-    """Recursively find all ``class: script`` elements in a tree.
-
-    Scripts can be nested inside UI elements (as children of Frames, etc.)
-    or at the top level. This walks the entire tree.
-    """
+    """Recursively find all ``class: script`` elements in a tree."""
     found: list[dict] = []
     for el in elements:
         if el.get("class") == "script":
             found.append(el)
-        # Recurse into children regardless of type
         children = el.get("children", [])
         if children:
             found.extend(_collect_scripts(children))
@@ -694,11 +806,7 @@ def _collect_scripts(elements: list[dict]) -> list[dict]:
 
 
 def _strip_scripts(elements: list[dict]) -> list[dict]:
-    """Return a copy of the element tree with scripts replaced by markers.
-
-    Script markers preserve the original position and nesting in the page,
-    so the builder can reconstruct the exact original structure.
-    """
+    """Return a copy of the element tree with scripts replaced by markers."""
     result: list[dict] = []
     for el in elements:
         if el.get("class") == "script":
@@ -733,7 +841,7 @@ def decompile_page(page_input: list[dict] | dict, output_stem: str = "page"
     decompiles both, and returns a dict of output files:
 
         ``{alias}.cat``: Decompiled script source (one per script)
-        ``{stem}.catui``: UI hierarchy with path mappings (JSON)
+        ``{stem}.catui``: CatUI DSL description of the UI layout
         ``.catpilerc``: Project config for recompilation with ``cpile build``
 
     Args:
@@ -743,7 +851,6 @@ def decompile_page(page_input: list[dict] | dict, output_stem: str = "page"
     Returns:
         Dict mapping output filenames to their content strings.
     """
-    # Handle dict wrapper: {"background": "...", "webcontent": [...]}
     metadata: dict[str, Any] = {}
     if isinstance(page_input, dict):
         metadata = {k: v for k, v in page_input.items() if k != "webcontent"}
@@ -753,42 +860,36 @@ def decompile_page(page_input: list[dict] | dict, output_stem: str = "page"
     else:
         page_json = page_input
 
-    # Recursively find all scripts (including nested)
     scripts = _collect_scripts(page_json)
-
-    # Decompile scripts - one .cat per script
     outputs: dict[str, str] = {}
 
-    # Build reverse path map: global ID → page.Element.path
-    ui_result = decompile_ui(page_json)
-    gid_to_path = {
-        gid: path for path, gid in ui_result.get("paths", {}).items()
-    }
+    # Build reverse path map for script decompilation
+    ui_paths: dict[str, str] = {}
+    _build_path_index(page_json, ui_paths)
+    gid_to_path = {gid: path for path, gid in ui_paths.items()}
 
     cat_names: list[str] = []
+    script_sources: dict[str, str] = {}
     for i, script in enumerate(scripts):
         alias = script.get("alias", f"s{i}")
         cat_name = f"{alias}.cat" if script.get("alias") else f"{output_stem}_s{i}.cat"
-        outputs[cat_name] = decompile_script(script, gid_to_path)
+        outputs[cat_name] = decompile_script(script, gid_to_path, forced_alias=alias)
         cat_names.append(cat_name)
+        script_sources[alias] = cat_name
 
-    if metadata:
-        ui_result["metadata"] = metadata
+    # CatUI DSL output
+    outputs[f"{output_stem}.catui"] = decompile_ui_to_catui(
+        page_json, metadata=metadata or None, script_sources=script_sources,
+    )
 
-    # UI hierarchy (used by the builder to reconstruct the full page)
-    outputs[f"{output_stem}.catui"] = json.dumps(ui_result, indent=2)
-
-    # Generate .catpilerc project config
-    # (cat_names preserves original document order from _collect_scripts)
+    # Generate .catpilerc — new format using ``catui`` key, no separate scripts list
     catpilerc: dict[str, Any] = {
         "project": output_stem,
         "taste": "indent",
-        "default_scope": "local",
         "pages": [
             {
                 "name": output_stem,
-                "ui": f"{output_stem}.catui",
-                "scripts": cat_names,
+                "catui": f"{output_stem}.catui",
                 "output": f"build/{output_stem}.json",
             }
         ],
@@ -796,6 +897,37 @@ def decompile_page(page_input: list[dict] | dict, output_stem: str = "page"
     outputs[".catpilerc"] = json.dumps(catpilerc, indent=2)
 
     return outputs
+
+
+def _build_path_index(
+    elements: list[dict],
+    paths: dict[str, str],
+    prefix: str = "Page",
+    _class_counts: dict[str, int] | None = None,
+) -> None:
+    """Build a path → globalID index from UI JSON elements."""
+    if _class_counts is None:
+        _class_counts = {}
+    for el in elements:
+        if el.get("class") == "script":
+            continue
+        gid = el.get("globalid", "")
+        cls = el.get("class", "Frame")
+        name = el.get("alias") or el.get("name")
+        if not name:
+            _class_counts[cls] = _class_counts.get(cls, 0) + 1
+            name = f"{cls}_{_class_counts[cls]}"
+        base_path = f"{prefix}.{name}" if prefix else name
+        path = base_path
+        counter = 1
+        while path in paths:
+            counter += 1
+            path = f"{base_path}_{counter}"
+        if gid:
+            paths[path] = gid
+        children = el.get("children", [])
+        if children:
+            _build_path_index(children, paths, path, _class_counts)
 
 
 # ---------------------------------------------------------------------------

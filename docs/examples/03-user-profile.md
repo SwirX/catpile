@@ -116,8 +116,7 @@ The project system uses a `.catpilerc` file to know which page to build:
 ```json
 {
     "page": "page.json",
-    "taste": "indent",
-    "default_scope": "local"
+    "taste": "indent"
 }
 ```
 

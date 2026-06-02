@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "catpile"
-version = "1.0.0"
+version = "1.1.0"
 description = "Catpile — Pythonic DSL → CatWeb JSON compiler"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -33,7 +33,7 @@ cpile-decompile = "catpile.decompile_cli:main"
 include = ["catpile*"]
 
 [tool.setuptools.package-data]
-catpile = ["schema.json"]
+catpile = ["schema.json", "ui_elements.json"]
 
 [tool.setuptools]
 include-package-data = true

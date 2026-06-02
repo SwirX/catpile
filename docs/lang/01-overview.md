@@ -119,8 +119,7 @@ Variables can have scope prefixes that map to CatWeb's `scope!name` format:
 |--------|--------|-------|
 | `l_count` | `l!count` | Local - same script |
 | `o_header` | `o!header` | Object - scoped to a UI element |
-| `g_score` | `g!score` | Global - all scripts on the site |
-| `count` | `count` | No scope (global by default) |
+| `count` | `count` | No prefix = global (default) |
 
 Double underscore escapes: `l__name` → `l_name` (literal)
 

@@ -450,8 +450,8 @@ class Parser:
             self._advance()
             return self._parse_statement() if self._peek().kind != "DEDENT" else ir.ActionStmt("COMMENT", [])
 
-        # Scope keyword + assignment: global|local|obj IDENT = value
-        if t.kind == "IDENT" and t.value in ("global", "local", "obj"):
+        # Scope keyword + assignment: local|obj IDENT = value
+        if t.kind == "IDENT" and t.value in ("local", "obj"):
             return self._parse_scope_assignment()
 
         # Multi-target assignment: IDENT, IDENT = action_call()
@@ -539,7 +539,7 @@ class Parser:
         return ir.ActionStmt(name, all_args, line=line)
 
     def _parse_scope_assignment(self) -> ir.ActionStmt:
-        """global|local|obj IDENT = value  →  VAR_SET"""
+        """local|obj IDENT = value  →  VAR_SET"""
         line = self._peek().line
         scope = self._advance().value
         name = scope_var_name(self._expect("IDENT").value)
@@ -790,13 +790,11 @@ class Parser:
         return parts
 
 
-def parse(source: str, default_scope: str = "local") -> ir.Program:
+def parse(source: str) -> ir.Program:
     """Parse Catpile source code into an IR Program.
 
     Args:
         source: Catpile source text.
-        default_scope: Default variable scope (``"local"``, ``"global"``, ``"obj"``).
-                        Only used when no explicit scope keyword is given.
     """
     tokens = tokenize(source)
     return Parser(tokens).parse()

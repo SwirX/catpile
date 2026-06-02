@@ -1,15 +1,15 @@
 # Guides: Decompiling
 
-Reverse-engineer CatWeb JSON back to CatLang source code.
+Reverse-engineer CatWeb JSON back to CatLang source code and CatUI DSL.
 
 ## Overview
 
-The decompiler converts CatWeb JSON → `.cat` source (for editing) + `.catui` (for UI paths).
+The decompiler converts CatWeb JSON → `.cat` source (for editing) + `.catui` DSL (for UI layout):
 
 ```
 CatWeb JSON → [Extract Scripts] → [Decompile Actions] → .cat file per script
-           → [Extract UI] → [Build Paths] → .catui
-           → [Strip Scripts] → .json (preserved UI)
+           → [Extract UI] → [Decompile to CatUI DSL] → page.catui
+           → [Page Metadata] → page-level properties in CatUI DSL
 ```
 
 ## Decompile Process
@@ -67,7 +67,7 @@ table_set("colors", "app_config", colors)
 
 ### 4. Scope Variable Handling
 
-`l!var` → `l_var`, `o!header` → `o_header`, `g!score` → `g_score`
+`l!var` → `l_var`, `o!header` → `o_header`
 
 Variables with dashes in names (`icy-tea`) use underscore: `icy_tea`
 
@@ -107,15 +107,22 @@ Save the copied JSON to a file (e.g. `page.json`) and proceed with the CLI or ed
 
 ### CLI
 
+Two commands for different use cases:
+
 ```bash
-# Decompile a CatWeb page JSON
+# Full round-trip: scripts + UI layout + project config
 cpile decompile page.json -o output-dir/
+
+# UI layout only: just the CatUI DSL, no scripts
+cpile catui page.json -o layout.catui
 ```
 
-This produces:
-- `page.cat` — one `.cat` file per script (aliased or indexed)
-- `page.catui` — UI hierarchy and path mappings
-- `page.json` — original UI structure with scripts stripped
+`decompile` produces:
+- `{alias}.cat` — one `.cat` file per script (aliased or indexed)
+- `page.catui` — UI layout as CatUI DSL, with page-level metadata and element hierarchy
+- `.catpilerc` — ready-to-use project config for `cpile build`
+
+`catui` produces only the `.catui` file. Use it when you already have your `.cat` scripts and just want the UI layout as readable DSL.
 
 Or use the standalone entry point:
 
@@ -131,7 +138,7 @@ curl -X POST https://cpile.bouyakhsass.com/api/decompile \
   -d @page.json
 ```
 
-Returns: `{"script.cat": "...", "page.catui": "...", "page.json": "..."}`
+Returns: `{"script.cat": "...", "page.catui": "...", ".catpilerc": "..."}`
 
 ### Editor Import
 

@@ -3,7 +3,6 @@
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -47,19 +46,19 @@ def _resolve_taste(args_taste: str | None, config: dict) -> str:
     return "indent"
 
 
-def _validate_scope(scope: str) -> str:
-    """Validate and normalize a scope name."""
-    if scope in ("local", "global", "obj"):
-        return scope
-    print(f"Warning: unknown scope {scope!r}, using 'local'", file=sys.stderr)
-    return "local"
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Catpile - Pythonic DSL → CatWeb JSON compiler",
     )
     sub = parser.add_subparsers(dest="command", help="Subcommands")
+
+    # Version / update notices (non-blocking)
+    try:
+        from ._version_check import check_for_updates, _show_whats_new
+        _show_whats_new()
+        check_for_updates()
+    except Exception:
+        pass
 
     # --- build subcommand ---
     build_parser = sub.add_parser("build", help="Build CatWeb page from project config")
@@ -72,9 +71,9 @@ def main() -> None:
                               help="Disable label cleaning")
 
     # --- compile subcommand ---
-    compile_parser = sub.add_parser("compile", help="Compile .cat files to JSON")
+    compile_parser = sub.add_parser("compile", help="Compile .cat or .catui files to JSON")
     compile_parser.add_argument("input", nargs="+", type=Path,
-                                help=".cat input files")
+                                help=".cat or .catui input files")
     compile_parser.add_argument("-o", "--output", type=Path,
                                 help="Output file (default: stdout)")
     compile_parser.add_argument("--minify", action="store_true",
@@ -82,12 +81,6 @@ def main() -> None:
     compile_parser.add_argument("--taste", default=None,
                                 choices=list_tastes(),
                                 help="Syntax variant")
-    compile_parser.add_argument("--default-scope", default=None,
-                                choices=["local", "global", "obj"],
-                                help="Default variable scope")
-    compile_parser.add_argument("-O", "--optimize", type=int, default=0,
-                                choices=[0, 1, 2, 3],
-                                help="Optimization level")
     compile_parser.add_argument("--no-clean", action="store_true",
                                 help="Disable label cleaning")
     compile_parser.add_argument("--ui", type=Path, default=None,
@@ -100,6 +93,22 @@ def main() -> None:
                                   help="CatWeb page JSON file")
     decompile_parser.add_argument("-o", "--output-dir", type=Path, default=None,
                                   help="Output directory (default: same as input)")
+
+    # --- catui subcommand ---
+    catui_parser = sub.add_parser("catui",
+                                  help="Extract CatUI DSL from page JSON")
+    catui_parser.add_argument("input", type=Path,
+                              help="CatWeb page JSON file")
+    catui_parser.add_argument("-o", "--output", type=Path, default=None,
+                              help="Output .catui file (default: stdout)")
+
+    # --- migrate subcommand ---
+    migrate_parser = sub.add_parser("migrate",
+                                    help="Migrate old JSON-format .catui to new DSL format")
+    migrate_parser.add_argument("input", type=Path,
+                                help="Old JSON-format .catui file")
+    migrate_parser.add_argument("-o", "--output", type=Path, default=None,
+                                help="Output .catui file (default: same path, overwrite)")
 
     args = parser.parse_args()
 
@@ -140,6 +149,56 @@ def main() -> None:
             print(f"  wrote {out_path}")
         return
 
+    # --- catui mode ---
+    if args.command == "catui":
+        from .decompiler import decompile_ui_to_catui
+        if not args.input.exists():
+            print(f"Error: {args.input} not found", file=sys.stderr)
+            sys.exit(1)
+        data = json.loads(args.input.read_text())
+        # Handle metadata wrapper
+        page_json = data.get("webcontent", data) if isinstance(data, dict) else data
+        if not isinstance(page_json, list):
+            page_json = [page_json]
+        result = decompile_ui_to_catui(page_json)
+        if args.output:
+            args.output.write_text(result)
+            print(f"Written to {args.output}")
+        else:
+            print(result, end="")
+        return
+
+    # --- migrate mode ---
+    if args.command == "migrate":
+        from .decompiler import decompile_ui_to_catui
+        if not args.input.exists():
+            print(f"Error: {args.input} not found", file=sys.stderr)
+            sys.exit(1)
+        raw = args.input.read_text()
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            # Already new DSL format
+            print(f"Error: {args.input} is already in new DSL format", file=sys.stderr)
+            sys.exit(1)
+        if isinstance(data, dict):
+            ui_elements = data.get("ui", [])
+            metadata = data.get("metadata", {})
+        elif isinstance(data, list):
+            ui_elements = data
+            metadata = {}
+        else:
+            print(f"Error: unrecognized format in {args.input}", file=sys.stderr)
+            sys.exit(1)
+        if not ui_elements:
+            print(f"Error: no UI elements found in {args.input}", file=sys.stderr)
+            sys.exit(1)
+        dsl = decompile_ui_to_catui(ui_elements, metadata=metadata)
+        out_path = args.output or args.input
+        out_path.write_text(dsl)
+        print(f"Migrated to {out_path}")
+        return
+
     # --- compile mode ---
     if not getattr(args, "input", None):
         parser.print_help()
@@ -150,8 +209,6 @@ def main() -> None:
 
     # Resolve taste: CLI flag > config file > default
     taste_name = _resolve_taste(args.taste, config)
-    if args.default_scope:
-        config["default_scope"] = _validate_scope(args.default_scope)
 
     # Instantiate the taste with config
     try:
@@ -163,18 +220,43 @@ def main() -> None:
     # Read and compile each input file
     from .ir import Program
     merged = Program()
+    catui_outputs: list[str] = []
+    has_catui = False
 
     for path in args.input:
         if not path.exists():
             print(f"Error: {path} not found", file=sys.stderr)
             sys.exit(1)
         try:
-            source = path.read_text()
-            prog = taste.compile(source)
-            merged.scripts.extend(prog.scripts)
+            if path.suffix.lower() == ".catui":
+                has_catui = True
+                from .catui_parser import parse_catui
+                from .catui_emitter import emit_catui
+                source = path.read_text()
+                prog = parse_catui(source)
+                catui_outputs.append(emit_catui(prog))
+            else:
+                source = path.read_text()
+                prog = taste.compile(source)
+                merged.scripts.extend(prog.scripts)
         except (SyntaxError, Exception) as e:
             print(f"Error in {path}: {e}", file=sys.stderr)
             sys.exit(1)
+
+    # If only .catui files were given, output the emitted UI JSON
+    if has_catui and not merged.scripts:
+        indent = None if args.minify else 2
+        output = json.dumps(
+            json.loads(catui_outputs[0]) if len(catui_outputs) == 1
+            else [json.loads(o) for o in catui_outputs],
+            indent=indent,
+        )
+        if args.output:
+            args.output.write_text(output)
+            print(f"Written to {args.output}")
+        else:
+            print(output)
+        return
 
     # Optimize
     if args.optimize:
